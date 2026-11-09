@@ -1,0 +1,98 @@
+﻿name: 🐞 Bug Report
+description: Report a bug in PcrAdmin.
+title: 'Bug: '
+labels: ['bug']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve PcrAdmin!
+        Please provide as much detail as possible so the issue can be reproduced.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where did you encounter this issue?
+      options:
+        - Local development
+        - Deployed environment
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of PcrAdmin are you using?
+      placeholder: e.g. 1.0.0
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: If this is a frontend issue, please provide your browser information.
+      placeholder: e.g. Chrome 157
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the problem.
+      placeholder: Describe what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the steps needed to reproduce the issue.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See the error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Screenshots
+      description: Add error messages, logs, or screenshots if available.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmations
+      description: Before submitting, please confirm the following.
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate.
+          required: true
+        - label: I have provided enough information to understand the problem.
+          required: true

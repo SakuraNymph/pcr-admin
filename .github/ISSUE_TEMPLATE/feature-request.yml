@@ -1,0 +1,66 @@
+﻿name: ✨ Feature Request
+description: Suggest a new feature or improvement for PcrAdmin.
+title: 'Feature: '
+labels: ['enhancement']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to PcrAdmin!
+        Please describe your idea and why it would be useful.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: What problem would this feature solve?
+      placeholder: Describe the problem you want to solve.
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: A clear and detailed description of the feature you would like.
+      placeholder: Describe the feature you want.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: How do you think this feature should work?
+      placeholder: Describe your proposed solution.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions?
+      placeholder: Describe any alternatives.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add screenshots, examples, or any other relevant information.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      description: Before submitting, please confirm the following.
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate.
+          required: true
+        - label: This feature is related to PcrAdmin.
+          required: true
