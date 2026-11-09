@@ -56,8 +56,8 @@ vue-vben-admin/
 ### 1. 获取项目
 
 ```bash
-git clone <你的 GitHub 仓库地址>
-cd <项目目录>
+git clone https://github.com/SakuraNymph/pcr-admin.git
+cd pcr-admin
 ```
 
 ### 2. 启用 pnpm

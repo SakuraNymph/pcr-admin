@@ -44,8 +44,8 @@ This repository retains the original Vben Admin monorepo structure and shared pa
 ## Getting Started
 
 ```bash
-git clone <your-repository-url>
-cd <project-directory>
+git clone https://github.com/SakuraNymph/pcr-admin.git
+cd pcr-admin
 corepack enable
 pnpm install
 ```
