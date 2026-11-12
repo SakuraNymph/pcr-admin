@@ -1,17 +1,8 @@
+import type { RoleItem } from '#/api/core/role';
+
 import { requestClient } from '#/api/request';
 
 /**
-
-* 管理员角色
-  */
-export interface AdminRole {
-  id: number;
-  name: string;
-  code: string;
-}
-
-/**
-
 * 管理员数据
   */
 export interface AdminItem {
@@ -26,8 +17,14 @@ export interface AdminItem {
   last_login_ip: string;
   created_at: string;
   updated_at: string;
-  roles: AdminRole[];
+  roles: RoleItem[];
 }
+
+/**
+
+* 管理员状态修改结果
+  */
+export type AdminStatusResult = Pick<AdminItem, 'id' | 'status'>;
 
 /**
 
@@ -133,16 +130,8 @@ export async function deleteAdminApi(id: number) {
 
 /**
 
-* 获取角色列表
-  */
-export async function getRolesApi() {
-  return requestClient.get<AdminRole[]>('/roles');
-}
-
-/**
-
 * 修改管理员状态
   */
-export function updateAdminStatusApi(id: number) {
-  return requestClient.put<AdminItem>(`/admins/${id}/status`);
+export function updateAdminStatusApi(id: number): Promise<AdminStatusResult> {
+  return requestClient.put<AdminStatusResult>(`/admins/${id}/status`);
 }

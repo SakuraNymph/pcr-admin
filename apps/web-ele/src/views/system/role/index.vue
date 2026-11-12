@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TreeNodeData } from 'element-plus';
+
 import type { MenuItem } from '#/api/core/menu';
 import type { PermissionItem } from '#/api/core/permission';
 import type { RoleItem } from '#/api/core/role';
@@ -28,10 +30,16 @@ import {
 
 import { getAllMenusApi } from '#/api/core/menu';
 import { getPermissionsApi } from '#/api/core/permission';
-import { createRole, deleteRole, getRolesApi, updateRole } from '#/api/core/role';
-import { getRoleMenusApi, updateRoleMenusApi } from '#/api/core/roleMenu';
-import { updateRolePermissionsApi } from '#/api/core/rolePermission';
-import { requestClient } from '#/api/request';
+import {
+  createRoleApi,
+  deleteRoleApi,
+  getRoleMenusApi,
+  getRolePermissionsApi,
+  getRolesApi,
+  updateRoleApi,
+  updateRoleMenusApi,
+  updateRolePermissionsApi,
+} from '#/api/core/role';
 
 const { hasAccessByCodes } = useAccess();
 
@@ -121,13 +129,7 @@ async function loadRoles() {
   try {
     const response = await getRolesApi();
 
-    if (Array.isArray(response)) {
-      tableData.value = response;
-    } else if (Array.isArray(response?.data)) {
-      tableData.value = response.data;
-    } else {
-      tableData.value = [];
-    }
+    tableData.value = response;
   } catch (error: any) {
     console.error('获取角色失败：', error);
 
@@ -242,11 +244,11 @@ async function handleSubmit() {
     };
 
     if (isEdit.value && form.id) {
-      await updateRole(form.id, payload);
+      await updateRoleApi(form.id, payload);
 
       ElMessage.success('编辑成功');
     } else {
-      await createRole(payload);
+      await createRoleApi(payload);
 
       ElMessage.success('新增成功');
     }
@@ -274,7 +276,7 @@ async function handleDelete(row: RoleItem) {
       type: 'warning',
     });
 
-    await deleteRole(row.id);
+    await deleteRoleApi(row.id);
 
     ElMessage.success('删除成功');
 
@@ -293,7 +295,7 @@ async function handleStatusChange(row: RoleItem, value: boolean) {
   const oldStatus = row.status;
 
   try {
-    await updateRole(row.id, {
+    await updateRoleApi(row.id, {
       status: value ? 1 : 0,
     });
 
@@ -353,10 +355,11 @@ function getMenuTypeName(type: number) {
 /**
  * 菜单节点显示名称
  */
-function getMenuLabel(data: MenuItem) {
-  const title = data.title || data.name || '';
+function getMenuLabel(data: TreeNodeData) {
+  const title = typeof data.title === 'string' ? data.title : '';
+  const fallbackTitle = typeof data.name === 'string' ? data.name : '';
 
-  return `${title}（${getMenuTypeName(Number(data.type))}）`;
+  return `${title || fallbackTitle}（${getMenuTypeName(Number(data.type))}）`;
 }
 
 /**
@@ -382,25 +385,10 @@ async function openMenuModal(row: RoleItem) {
       getRoleMenusApi(row.id),
     ]);
 
-    if (Array.isArray(allMenus)) {
-      menuTree.value = allMenus;
-    } else if (Array.isArray(allMenus?.data)) {
-      menuTree.value = allMenus.data;
-    } else {
-      menuTree.value = [];
-    }
-
-    if (Array.isArray(roleMenus)) {
-      checkedMenuIds.value = roleMenus
-        .map((menu: any) => Number(menu.id))
-        .filter((id: number) => Number.isInteger(id) && id > 0);
-    } else if (Array.isArray(roleMenus?.data)) {
-      checkedMenuIds.value = roleMenus.data
-        .map((menu: any) => Number(menu.id))
-        .filter((id: number) => Number.isInteger(id) && id > 0);
-    } else {
-      checkedMenuIds.value = [];
-    }
+    menuTree.value = allMenus;
+    checkedMenuIds.value = roleMenus
+      .map((menu) => menu.id)
+      .filter((id) => Number.isInteger(id) && id > 0);
 
     await nextTick();
 
@@ -561,139 +549,6 @@ const filteredPermissions = computed(() => {
 });
 
 /**
- * 提取 API 权限数组
- *
- * 兼容：
- *
- * 1. []
- * 2. { data: [] }
- * 3. { permission_ids: [] }
- * 4. { data: { permission_ids: [] } }
- */
-function getPermissionData(response: any): PermissionItem[] {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  return [];
-}
-
-/**
- * 提取角色已有权限 ID
- *
- * 兼容后端返回：
- *
- * [
- *   {
- *     id: 1,
- *     name: 'system:user:list'
- *   }
- * ]
- *
- * 或：
- *
- * {
- *   data: [
- *     {
- *       id: 1
- *     }
- *   ]
- * }
- *
- * 或：
- *
- * {
- *   permission_ids: [1, 2, 3]
- * }
- */
-function getRolePermissionIds(response: any): number[] {
-  let data = response;
-
-  /**
-   * 如果是：
-   *
-   * {
-   *   data: [...]
-   * }
-   */
-  if (data && !Array.isArray(data) && Array.isArray(data.data)) {
-    data = data.data;
-  }
-
-  /**
-   * 如果是：
-   *
-   * {
-   *   data: {
-   *     permission_ids: [...]
-   *   }
-   * }
-   */
-  if (
-    data &&
-    !Array.isArray(data) &&
-    data.data &&
-    Array.isArray(data.data.permission_ids)
-  ) {
-    data = data.data.permission_ids;
-  }
-
-  /**
-   * 如果是：
-   *
-   * {
-   *   permission_ids: [...]
-   * }
-   */
-  if (data && !Array.isArray(data) && Array.isArray(data.permission_ids)) {
-    data = data.permission_ids;
-  }
-
-  /**
-   * 数字 ID 数组
-   */
-  if (Array.isArray(data)) {
-    return [
-      ...new Set(
-        data
-          .map((item: any) => {
-            if (typeof item === 'number' || typeof item === 'string') {
-              return Number(item);
-            }
-
-            return Number(item?.id);
-          })
-          .filter((id: number) => Number.isInteger(id) && id > 0),
-      ),
-    ];
-  }
-
-  return [];
-}
-
-/**
- * 真正调用：
- *
- * GET /api/admin/roles/{role}/permissions
- *
- * 这里不再依赖 getRolePermissionsApi()
- * 的封装，直接使用 requestClient。
- */
-async function getCurrentRolePermissions(roleId: number) {
-  console.log('准备请求角色 API 权限：', `/roles/${roleId}/permissions`);
-
-  const response = await requestClient.get(`/roles/${roleId}/permissions`);
-
-  console.log('角色 API 权限接口返回：', response);
-
-  return response;
-}
-
-/**
  * 打开 API 权限
  */
 async function openPermissionModal(row: RoleItem) {
@@ -730,19 +585,26 @@ async function openPermissionModal(row: RoleItem) {
      * 1. 全部 API 权限
      * 2. 当前角色 API 权限
      */
-    const [allPermissionsResponse, rolePermissionsResponse] = await Promise.all(
-      [getPermissionsApi(), getCurrentRolePermissions(row.id)],
-    );
+    const [allPermissions, rolePermissions] = await Promise.all([
+      getPermissionsApi(),
+      getRolePermissionsApi(row.id),
+    ]);
 
     /**
      * 全部 API 权限
      */
-    permissionList.value = getPermissionData(allPermissionsResponse);
+    permissionList.value = allPermissions;
 
     /**
      * 当前角色已有 API 权限
      */
-    const rolePermissionIds = getRolePermissionIds(rolePermissionsResponse);
+    const rolePermissionIds = [
+      ...new Set(
+        rolePermissions
+          .map((permission) => permission.id)
+          .filter((id) => Number.isInteger(id) && id > 0),
+      ),
+    ];
 
     currentRolePermissionIds.value = rolePermissionIds;
 

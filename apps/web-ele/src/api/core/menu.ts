@@ -25,6 +25,11 @@ export interface MenuItem {
   children?: MenuItem[];
 }
 
+export interface MenuDeleteResult {
+  ids: number[];
+  deleted_count: number;
+}
+
 export async function getUserMenusApi() {
   return requestClient.get<RouteRecordStringComponent[]>('/menus');
 }
@@ -43,48 +48,8 @@ export async function updateMenu(id: number, payload: Partial<MenuItem>) {
 
 export async function deleteMenu(ids: number | number[]) {
   if (Array.isArray(ids)) {
-    return requestClient.delete<void>('/menus', { data: { ids } });
+    return requestClient.delete<MenuDeleteResult>('/menus', { data: { ids } });
   }
 
-  return requestClient.delete<void>(`/menus/${ids}`);
-}
-
-export function toTree(list: MenuItem[]): MenuItem[] {
-  const map = new Map<number, MenuItem>();
-  const roots: MenuItem[] = [];
-
-  list.forEach((item) => {
-    map.set(item.id, { ...item, children: [] });
-  });
-
-  list.forEach((item) => {
-    const node = map.get(item.id)!;
-
-    ```
-if (item.parent_id && map.has(item.parent_id)) {
-  const parent = map.get(item.parent_id)!;
-  parent.children!.push(node);
-} else {
-  roots.push(node);
-}
-```;
-  });
-
-  const sortFn = (a: MenuItem, b: MenuItem) => a.sort - b.sort;
-
-  const sortTree = (arr: MenuItem[]) => {
-    arr.sort(sortFn);
-
-    ```
-arr.forEach((node) => {
-  if (node.children) {
-    sortTree(node.children);
-  }
-});
-```;
-  };
-
-  sortTree(roots);
-
-  return roots;
+  return requestClient.delete<MenuDeleteResult>(`/menus/${ids}`);
 }

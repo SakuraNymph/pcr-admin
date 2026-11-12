@@ -16,26 +16,16 @@ export interface AnalysisTrendItem {
   new_registers: number; // 新增注册数
 }
 
-// 3. 接口返回的 data 完整数据结构
-export interface StatisticsData {
-  data: AnalysisOverviewItem[];
-}
-
-// 4. 接口返回的 data 完整数据结构
-export interface trendData {
-  data: AnalysisTrendItem[];
-}
-
 /**
  * 获取首页/看板统计数据
  */
-export async function getStatistics() {
-  return requestClient.get<StatisticsData>('/analytics');
+export async function getStatistics(): Promise<AnalysisOverviewItem[]> {
+  return requestClient.get<AnalysisOverviewItem[]>('/analytics');
 }
 
 /**
  * 获取首页/折线图数据
  */
-export async function getTrendData() {
-  return requestClient.get<trendData>('/trend');
+export async function getTrendData(): Promise<AnalysisTrendItem[]> {
+  return requestClient.get<AnalysisTrendItem[]>('/trend');
 }

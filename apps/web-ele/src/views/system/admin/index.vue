@@ -3,10 +3,10 @@ import type { FormInstance, FormRules } from 'element-plus';
 
 import type {
   AdminItem,
-  AdminRole,
   CreateAdminParams,
   UpdateAdminParams,
 } from '#/api/core/admin';
+import type { RoleItem } from '#/api/core/role';
 
 import { onMounted, reactive, ref } from 'vue';
 
@@ -38,10 +38,10 @@ import {
   createAdminApi,
   deleteAdminApi,
   getAdminsApi,
-  getRolesApi,
   updateAdminApi,
   updateAdminStatusApi,
 } from '#/api/core/admin';
+import { getRolesApi } from '#/api/core/role';
 
 /**
  * Vben 权限码
@@ -86,7 +86,7 @@ const adminList = ref<AdminItem[]>([]);
 /**
  * 角色列表
  */
-const roles = ref<AdminRole[]>([]);
+const roles = ref<RoleItem[]>([]);
 
 /**
  * 查询表单
@@ -292,43 +292,7 @@ async function getAdminList() {
 async function getRoles() {
   const response = await getRolesApi();
 
-  /**
-   * 兼容：
-   *
-   * 1. requestClient 已经解包：
-   *    [...]
-   *
-   * 2. 返回：
-   *    { data: [...] }
-   */
-  let roleList: unknown = response;
-
-  if (!Array.isArray(roleList)) {
-    roleList = (
-      response as {
-        data?: unknown;
-      }
-    )?.data;
-  }
-
-  if (!Array.isArray(roleList)) {
-    roles.value = [];
-    return;
-  }
-
-  /**
-   * 过滤非法角色数据，
-   * 确保 ElOption 的 value 一定是合法的 id。
-   */
-  roles.value = roleList.filter((role): role is AdminRole => {
-    return (
-      typeof role === 'object' &&
-      role !== null &&
-      typeof (role as AdminRole).id === 'number' &&
-      Number.isFinite((role as AdminRole).id) &&
-      typeof (role as AdminRole).name === 'string'
-    );
-  });
+  roles.value = response;
 }
 
 /**
@@ -580,9 +544,7 @@ async function handleStatusChange(
     /**
      * 使用后端返回的最终状态校准前端状态。
      */
-    if (response?.data?.status !== undefined) {
-      row.status = response.data.status;
-    }
+    row.status = response.status;
 
     ElMessage.success(row.status === 1 ? '管理员已启用' : '管理员已禁用');
   } catch (error) {

@@ -1,4 +1,7 @@
 // src/api/core/role.ts
+import type { MenuItem } from '#/api/core/menu';
+import type { PermissionItem } from '#/api/core/permission';
+
 import { requestClient } from '#/api/request';
 
 /**
@@ -42,27 +45,76 @@ export interface RoleItem {
 /**
  * 获取角色列表
  */
-export async function getRolesApi() {
+export async function getRolesApi(): Promise<RoleItem[]> {
   return requestClient.get<RoleItem[]>('/roles');
 }
 
 /**
  * 新增角色
  */
-export async function createRole(payload: Partial<RoleItem>) {
+export async function createRoleApi(
+  payload: Partial<RoleItem>,
+): Promise<RoleItem> {
   return requestClient.post<RoleItem>('/roles', payload);
 }
 
 /**
  * 修改角色
  */
-export async function updateRole(id: number, payload: Partial<RoleItem>) {
+export async function updateRoleApi(
+  id: number,
+  payload: Partial<RoleItem>,
+): Promise<RoleItem> {
   return requestClient.put<RoleItem>(`/roles/${id}`, payload);
 }
 
 /**
  * 删除角色
  */
-export async function deleteRole(id: number) {
-  return requestClient.delete<void>(`/roles/${id}`);
+export async function deleteRoleApi(id: number): Promise<null> {
+  return requestClient.delete<null>(`/roles/${id}`);
+}
+
+/**
+ * 获取角色拥有的菜单
+ */
+export async function getRoleMenusApi(roleId: number): Promise<MenuItem[]> {
+  return requestClient.get<MenuItem[]>(`/roles/${roleId}/menus`);
+}
+
+/**
+ * 保存角色菜单
+ */
+export async function updateRoleMenusApi(
+  roleId: number,
+  menuIds: number[],
+): Promise<unknown> {
+  return requestClient.put<unknown>(`/roles/${roleId}/menus`, {
+    menu_ids: menuIds,
+  });
+}
+
+/**
+ * 获取角色拥有的 API 权限
+ */
+export async function getRolePermissionsApi(
+  roleId: number,
+): Promise<PermissionItem[]> {
+  return requestClient.get<PermissionItem[]>(
+    `/roles/${roleId}/permissions`,
+  );
+}
+
+/**
+ * 保存角色 API 权限
+ *
+ * 后端使用 sync：传入什么就保存什么。
+ */
+export async function updateRolePermissionsApi(
+  roleId: number,
+  permissionIds: number[],
+): Promise<unknown> {
+  return requestClient.put<unknown>(`/roles/${roleId}/permissions`, {
+    permission_ids: permissionIds,
+  });
 }

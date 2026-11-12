@@ -35,6 +35,11 @@ interface PermissionForm {
   menu_id: null | number;
 }
 
+interface MenuTreeSelectItem extends MenuItem {
+  children?: MenuTreeSelectItem[];
+  disabled?: boolean;
+}
+
 /** =========================
  * 权限
  * ========================= */
@@ -69,7 +74,7 @@ const loading = ref(false);
 
 const permissionList = ref<PermissionItem[]>([]);
 
-const menuList = ref<MenuItem[]>([]);
+const menuList = ref<MenuTreeSelectItem[]>([]);
 
 const menuLoading = ref(false);
 
@@ -146,41 +151,11 @@ function resetForm() {
 }
 
 /**
- * 解析权限列表
- */
-function getPermissionData(response: any): PermissionItem[] {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  return [];
-}
-
-/**
- * 解析菜单列表
- */
-function getMenuData(response: any): MenuItem[] {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  return [];
-}
-
-/**
  * 标记菜单 TreeSelect 的禁用状态。
  *
  * type = 3 表示按钮权限，不允许作为 API 权限关联菜单。
  */
-function markMenuDisabled(item: MenuItem): MenuItem {
+function markMenuDisabled(item: MenuItem): MenuTreeSelectItem {
   return {
     ...item,
     disabled: item.type === 3,
@@ -199,9 +174,9 @@ async function getPermissionList() {
   loading.value = true;
 
   try {
-    const response = await getPermissionsApi();
+    const permissions = await getPermissionsApi();
 
-    permissionList.value = getPermissionData(response);
+    permissionList.value = permissions;
   } catch (error) {
     console.error(error);
 
@@ -218,11 +193,9 @@ async function getMenuList() {
   menuLoading.value = true;
 
   try {
-    const response = await getAllMenusApi();
+    const menus = await getAllMenusApi();
 
-    const list = getMenuData(response);
-
-    menuList.value = list.map((item) => markMenuDisabled(item));
+    menuList.value = menus.map((item) => markMenuDisabled(item));
   } catch (error) {
     console.error(error);
 
