@@ -1,98 +1,64 @@
 <script lang="ts" setup>
-import type { VbenFormSchema } from '@vben/common-ui';
-import type { BasicOption } from '@vben/types';
-
-import { computed, markRaw } from 'vue';
-
-import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
-import { $t } from '@vben/locales';
-
-import { useAuthStore } from '#/store';
+import PcrLoginForm from './components/PcrLoginForm.vue';
 
 defineOptions({ name: 'Login' });
-
-const authStore = useAuthStore();
-
-const MOCK_USER_OPTIONS: BasicOption[] = [
-  {
-    label: 'Super',
-    value: 'vben',
-  },
-  {
-    label: 'Admin',
-    value: 'admin',
-  },
-  {
-    label: 'User',
-    value: 'jack',
-  },
-];
-
-const formSchema = computed((): VbenFormSchema[] => {
-  return [
-    {
-      component: 'VbenSelect',
-      componentProps: {
-        options: MOCK_USER_OPTIONS,
-        placeholder: $t('authentication.selectAccount'),
-      },
-      fieldName: 'selectAccount',
-      label: $t('authentication.selectAccount'),
-      rules: z
-        .string()
-        .min(1, { message: $t('authentication.selectAccount') })
-        .optional()
-        .default('vben'),
-    },
-    {
-      component: 'VbenInput',
-      componentProps: {
-        placeholder: $t('authentication.usernameTip'),
-      },
-      dependencies: {
-        trigger(values, form) {
-          if (values.selectAccount) {
-            const findUser = MOCK_USER_OPTIONS.find(
-              (item) => item.value === values.selectAccount,
-            );
-            if (findUser) {
-              form.setValues({
-                password: '123456',
-                username: findUser.value,
-              });
-            }
-          }
-        },
-        triggerFields: ['selectAccount'],
-      },
-      fieldName: 'username',
-      label: $t('authentication.username'),
-      rules: z.string().min(1, { message: $t('authentication.usernameTip') }),
-    },
-    {
-      component: 'VbenInputPassword',
-      componentProps: {
-        placeholder: $t('authentication.password'),
-      },
-      fieldName: 'password',
-      label: $t('authentication.password'),
-      rules: z.string().min(1, { message: $t('authentication.passwordTip') }),
-    },
-    {
-      component: markRaw(SliderCaptcha),
-      fieldName: 'captcha',
-      rules: z.boolean().refine((value) => value, {
-        message: $t('authentication.verifyRequiredTip'),
-      }),
-    },
-  ];
-});
 </script>
 
 <template>
-  <AuthenticationLogin
-    :form-schema="formSchema"
-    :loading="authStore.loginLoading"
-    @submit="authStore.authLogin"
-  />
+  <div class="pcr-login-page">
+    <p class="pcr-login-page__kicker">ADMIN ACCESS</p>
+    <h1 class="pcr-login-page__title">登录运营台</h1>
+    <p class="pcr-login-page__description">
+      使用管理员账号继续管理游戏数据与运营内容。
+    </p>
+    <PcrLoginForm class="pcr-login-page__form" />
+  </div>
 </template>
+
+<style scoped>
+.pcr-login-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.pcr-login-page__kicker {
+  margin: 0 0 10px;
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-caption);
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-heading);
+  color: var(--pcr-color-primary);
+  letter-spacing: var(--pcr-letter-spacing-kicker);
+}
+
+.pcr-login-page__title {
+  margin: 0;
+  font-family: var(--pcr-font-family);
+  font-size: 28px;
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-heading);
+  color: var(--pcr-text-primary);
+  letter-spacing: var(--pcr-letter-spacing-tight);
+}
+
+.pcr-login-page__description {
+  margin: 10px 0 0;
+  font-size: var(--pcr-font-size-body);
+  line-height: var(--pcr-line-height-body);
+  color: var(--pcr-text-secondary);
+}
+
+.pcr-login-page__form {
+  margin-top: 28px;
+}
+
+@media (max-width: 599px) {
+  .pcr-login-page__title {
+    font-size: 24px;
+  }
+
+  .pcr-login-page__form {
+    margin-top: 22px;
+  }
+}
+</style>

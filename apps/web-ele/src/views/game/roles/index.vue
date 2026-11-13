@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-import type { CreateGameRolePayload, GameRoleItem, GameRoleListResult, UpdateGameRolePayload } from '#/api/core/game-role';
+import type {
+  CreateGameRolePayload,
+  GameRoleItem,
+  GameRoleListResult,
+  UpdateGameRolePayload,
+} from '#/api/core/game-role';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -7,7 +12,6 @@ import { useAccess } from '@vben/access';
 
 import {
   ElButton,
-  ElCard,
   ElCol,
   ElDatePicker,
   ElDescriptions,
@@ -27,10 +31,15 @@ import {
   ElSelect,
   ElTable,
   ElTableColumn,
-  ElTag,
 } from 'element-plus';
 
-import { createGameRoleApi, deleteGameRoleApi, getGameRoleApi, getGameRolesApi, updateGameRoleApi } from '#/api/core/game-role';
+import {
+  createGameRoleApi,
+  deleteGameRoleApi,
+  getGameRoleApi,
+  getGameRolesApi,
+  updateGameRoleApi,
+} from '#/api/core/game-role';
 
 const { hasAccessByCodes } = useAccess();
 
@@ -53,6 +62,12 @@ const gameRoles = ref<GameRoleItem[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
+
+/**
+ * 加载失败状态
+ */
+const error = ref('');
+const errorStatus = ref<null | number>(null);
 
 /**
  * 搜索条件
@@ -216,12 +231,18 @@ function getElementLabel(value: number) {
 }
 
 /**
- * 获取属性 Tag 类型
+ * 获取属性标签色调
  */
-function getElementTagType(value: number) {
-  const element = elementOptions.find((item) => item.value === value);
+function getElementTone(value: number) {
+  const map: Record<number, string> = {
+    1: 'danger',
+    2: 'primary',
+    3: 'success',
+    4: 'warning',
+    5: 'secondary',
+  };
 
-  return element?.type ?? 'info';
+  return map[value] ?? 'muted';
 }
 
 /**
@@ -305,6 +326,8 @@ function parseListResult(response: any): GameRoleListResult {
  */
 async function loadGameRoles() {
   loading.value = true;
+  error.value = '';
+  errorStatus.value = null;
 
   try {
     const response = await getGameRolesApi({
@@ -324,9 +347,37 @@ async function loadGameRoles() {
 
     gameRoles.value = result.items;
     total.value = result.total;
-  } catch (error) {
-    console.error('获取游戏角色列表失败:', error);
+  } catch (err) {
+    console.error('获取游戏角色列表失败:', err);
     ElMessage.error('获取游戏角色列表失败');
+
+    gameRoles.value = [];
+    total.value = 0;
+
+    const requestError = err as {
+      code?: number | string;
+      message?: string;
+      response?: { status?: number };
+      status?: number;
+    };
+
+    const status = Number(
+      requestError?.response?.status ??
+        requestError?.status ??
+        requestError?.code ??
+        0,
+    );
+
+    // requestClient 只抛出响应体，403 时通过后端权限提示文案兜底识别
+    const isForbidden =
+      status === 403 ||
+      (typeof requestError?.message === 'string' &&
+        requestError.message.includes('权限'));
+
+    errorStatus.value = isForbidden ? 403 : status || null;
+    error.value = isForbidden
+      ? '暂无权限查看游戏角色'
+      : '游戏角色加载失败，请稍后重试';
   } finally {
     loading.value = false;
   }
@@ -679,501 +730,553 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="game-role-page">
-    <!-- 搜索区域 -->
-    <ElCard shadow="never" class="search-card">
-      <ElForm :model="searchForm" label-width="90px">
-        <ElRow :gutter="16">
-          <ElCol :span="6">
-            <ElFormItem label="角色名称">
-              <ElInput
-                v-model="searchForm.name"
-                clearable
-                placeholder="请输入角色名称"
-                @keyup.enter="handleSearch"
-              />
-            </ElFormItem>
-          </ElCol>
+  <div class="pcr-page game-role-page">
+    <!-- 筛选条件 -->
+    <section class="pcr-filter-panel pcr-filter-panel--compact pcr-surface">
+      <ElForm
+        :model="searchForm"
+        class="pcr-filter-row"
+        label-position="left"
+        @submit.prevent="handleSearch"
+      >
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--lg"
+          label="角色名称"
+        >
+          <ElInput
+            v-model="searchForm.name"
+            clearable
+            placeholder="请输入角色名称"
+            @keyup.enter="handleSearch"
+          />
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="属性">
-              <ElSelect
-                v-model="searchForm.element"
-                clearable
-                placeholder="请选择属性"
-                style="width: 100%"
-              >
-                <ElOption
-                  v-for="item in elementOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="属性">
+          <ElSelect
+            v-model="searchForm.element"
+            clearable
+            placeholder="请选择属性"
+          >
+            <ElOption
+              v-for="item in elementOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="攻击类型">
-              <ElSelect
-                v-model="searchForm.atk_type"
-                clearable
-                placeholder="请选择攻击类型"
-                style="width: 100%"
-              >
-                <ElOption label="魔法" :value="-1" />
-                <ElOption label="辅助" :value="0" />
-                <ElOption label="物理" :value="1" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--sm"
+          label="攻击类型"
+        >
+          <ElSelect
+            v-model="searchForm.atk_type"
+            clearable
+            placeholder="请选择攻击类型"
+          >
+            <ElOption label="魔法" :value="-1" />
+            <ElOption label="辅助" :value="0" />
+            <ElOption label="物理" :value="1" />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="位置">
-              <ElSelect
-                v-model="searchForm.position"
-                clearable
-                placeholder="请选择位置"
-                style="width: 100%"
-              >
-                <ElOption label="前卫" :value="1" />
-                <ElOption label="中卫" :value="2" />
-                <ElOption label="后卫" :value="3" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="位置">
+          <ElSelect
+            v-model="searchForm.position"
+            clearable
+            placeholder="请选择位置"
+          >
+            <ElOption label="前卫" :value="1" />
+            <ElOption label="中卫" :value="2" />
+            <ElOption label="后卫" :value="3" />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="会战角色">
-              <ElSelect
-                v-model="searchForm.is_clan_battle"
-                clearable
-                placeholder="请选择"
-                style="width: 100%"
-              >
-                <ElOption label="是" :value="true" />
-                <ElOption label="否" :value="false" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--sm"
+          label="会战角色"
+        >
+          <ElSelect
+            v-model="searchForm.is_clan_battle"
+            clearable
+            placeholder="请选择"
+          >
+            <ElOption label="是" :value="true" />
+            <ElOption label="否" :value="false" />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="状态">
-              <ElSelect
-                v-model="searchForm.status"
-                clearable
-                placeholder="请选择状态"
-                style="width: 100%"
-              >
-                <ElOption label="启用" :value="true" />
-                <ElOption label="禁用" :value="false" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="状态">
+          <ElSelect
+            v-model="searchForm.status"
+            clearable
+            placeholder="请选择状态"
+          >
+            <ElOption label="启用" :value="true" />
+            <ElOption label="禁用" :value="false" />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="获取方式">
-              <ElSelect
-                v-model="searchForm.obtain"
-                clearable
-                placeholder="请选择"
-                style="width: 100%"
-              >
-                <ElOption label="抽卡获取" :value="1" />
-                <ElOption label="活动获取" :value="2" />
-                <ElOption label="兑换获取" :value="3" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--sm"
+          label="获取方式"
+        >
+          <ElSelect v-model="searchForm.obtain" clearable placeholder="请选择">
+            <ElOption label="抽卡获取" :value="1" />
+            <ElOption label="活动获取" :value="2" />
+            <ElOption label="兑换获取" :value="3" />
+          </ElSelect>
+        </ElFormItem>
 
-          <ElCol :span="6">
-            <ElFormItem label="概率">
-              <ElSelect
-                v-model="searchForm.probability"
-                clearable
-                placeholder="请选择"
-                style="width: 100%"
-              >
-                <ElOption label="0.7%" :value="1" />
-                <ElOption label="1.4%" :value="2" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="概率">
+          <ElSelect
+            v-model="searchForm.probability"
+            clearable
+            placeholder="请选择"
+          >
+            <ElOption label="0.7%" :value="1" />
+            <ElOption label="1.4%" :value="2" />
+          </ElSelect>
+        </ElFormItem>
 
-        <div class="search-actions">
+        <div class="pcr-filter-actions">
+          <ElButton class="pcr-filter-reset" @click="handleReset">
+            重置
+          </ElButton>
+
           <ElButton type="primary" @click="handleSearch"> 搜索 </ElButton>
+        </div>
+      </ElForm>
+    </section>
 
-          <ElButton @click="handleReset"> 重置 </ElButton>
-
-          <ElButton v-if="canCreate" type="success" @click="handleCreate">
+    <!-- 游戏角色列表 -->
+    <section class="pcr-table-shell">
+      <div class="pcr-table-head">
+        <span class="pcr-table-head__count">共 {{ total }} 个角色</span>
+        <div class="pcr-table-head__tools">
+          <ElButton v-if="canCreate" type="primary" @click="handleCreate">
             新增角色
           </ElButton>
         </div>
-      </ElForm>
-    </ElCard>
-
-    <!-- 游戏角色列表 -->
-    <ElCard shadow="never" class="table-card">
-      <ElTable
-        v-loading="loading"
-        :data="gameRoles"
-        border
-        stripe
-        row-key="id"
-        style="width: 100%"
-      >
-        <!-- ID -->
-        <ElTableColumn prop="id" label="角色ID" width="90" align="center" />
-
-        <!-- 头像 -->
-        <ElTableColumn label="头像" width="90" align="center">
-          <template #default="{ row }">
-            <ElImage
-              v-if="row.image_url"
-              :src="row.image_url"
-              fit="cover"
-              class="role-avatar"
-              :preview-src-list="[row.image_url]"
-              preview-teleported
-            />
-
-            <span v-else>-</span>
-          </template>
-        </ElTableColumn>
-
-        <!-- 名称 -->
-        <ElTableColumn
-          prop="name"
-          label="角色名称"
-          min-width="180"
-          show-overflow-tooltip
-        />
-
-        <!-- 昵称 -->
-        <ElTableColumn
-          prop="nickname"
-          label="昵称"
-          width="130"
-          show-overflow-tooltip
-        />
-
-        <!-- 属性 -->
-        <ElTableColumn label="属性" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getElementTagType(row.element)" effect="dark">
-              {{ getElementLabel(row.element) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <!-- 攻击类型 -->
-        <ElTableColumn label="攻击类型" width="100" align="center">
-          <template #default="{ row }">
-            {{ getAtkTypeLabel(row.atk_type) }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 位置 -->
-        <ElTableColumn label="位置" width="90" align="center">
-          <template #default="{ row }">
-            {{ getPositionLabel(row.position) }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 会战角色 -->
-        <ElTableColumn label="会战角色" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag :type="row.is_clan_battle ? 'success' : 'info'">
-              {{ row.is_clan_battle ? '是' : '否' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <!-- 获取方式 -->
-        <ElTableColumn label="获取方式" width="110" align="center">
-          <template #default="{ row }">
-            {{ getObtainLabel(row.obtain) }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 概率 -->
-        <ElTableColumn label="概率" width="80" align="center">
-          <template #default="{ row }">
-            {{ getProbabilityLabel(row.probability) }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 使用次数 -->
-        <ElTableColumn label="使用次数" width="100" align="center">
-          <template #default="{ row }">
-            {{ row.use_times ?? 0 }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 更新时间 -->
-        <ElTableColumn label="更新时间" width="120" align="center">
-          <template #default="{ row }">
-            {{ row.up_time || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <!-- 状态 -->
-        <ElTableColumn label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="row.status ? 'success' : 'danger'">
-              {{ row.status ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <!-- 操作 -->
-        <ElTableColumn label="操作" width="190" fixed="right" align="center">
-          <template #default="{ row }">
-            <ElButton
-              v-if="canDetail"
-              link
-              type="primary"
-              @click="handleDetail(row)"
-            >
-              详情
-            </ElButton>
-
-            <ElButton
-              v-if="canUpdate"
-              link
-              type="primary"
-              @click="handleEdit(row)"
-            >
-              编辑
-            </ElButton>
-
-            <ElButton
-              v-if="canDelete"
-              link
-              type="danger"
-              @click="handleDelete(row)"
-            >
-              删除
-            </ElButton>
-
-            <span
-              v-if="!canDetail && !canUpdate && !canDelete"
-              class="no-action"
-            >
-              无操作权限
-            </span>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-
-      <!-- 分页 -->
-      <div v-if="total > 0" class="pagination-wrapper">
-        <ElPagination
-          v-model:current-page="page"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange"
-          @size-change="handlePageSizeChange"
-        />
       </div>
 
-      <ElEmpty
-        v-if="!loading && gameRoles.length === 0"
-        description="暂无游戏角色数据"
-      />
-    </ElCard>
+      <div v-if="error" class="table-state">
+        <p class="table-state__title">{{ error }}</p>
+        <ElButton
+          v-if="errorStatus !== 403"
+          type="primary"
+          plain
+          @click="loadGameRoles()"
+        >
+          重新加载
+        </ElButton>
+      </div>
+
+      <template v-else>
+        <ElTable
+          v-loading="loading"
+          :data="gameRoles"
+          element-loading-background="var(--pcr-bg-surface)"
+          element-loading-text="加载游戏角色…"
+          row-key="id"
+          style="width: 100%"
+        >
+          <!-- ID -->
+          <ElTableColumn prop="id" label="角色ID" min-width="64" align="center" />
+
+          <!-- 头像 -->
+          <ElTableColumn label="头像" min-width="60" align="center">
+            <template #default="{ row }">
+              <ElImage
+                v-if="row.image_url"
+                :src="row.image_url"
+                fit="cover"
+                class="role-avatar"
+                :preview-src-list="[row.image_url]"
+                preview-teleported
+              />
+
+              <span v-else>-</span>
+            </template>
+          </ElTableColumn>
+
+          <!-- 名称 -->
+          <ElTableColumn
+            prop="name"
+            label="角色名称"
+            min-width="150"
+            show-overflow-tooltip
+          />
+
+          <!-- 昵称 -->
+          <ElTableColumn
+            prop="nickname"
+            label="昵称"
+            min-width="96"
+            show-overflow-tooltip
+          />
+
+          <!-- 属性 -->
+          <ElTableColumn label="属性" min-width="60" align="center">
+            <template #default="{ row }">
+              <span
+                class="pcr-soft-tag"
+                :class="`pcr-soft-tag--${getElementTone(row.element)}`"
+              >
+                {{ getElementLabel(row.element) }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <!-- 攻击类型 -->
+          <ElTableColumn label="攻击类型" min-width="76" align="center">
+            <template #default="{ row }">
+              {{ getAtkTypeLabel(row.atk_type) }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 位置 -->
+          <ElTableColumn label="位置" min-width="56" align="center">
+            <template #default="{ row }">
+              {{ getPositionLabel(row.position) }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 会战角色 -->
+          <ElTableColumn label="会战角色" min-width="76" align="center">
+            <template #default="{ row }">
+              <span
+                class="pcr-soft-tag"
+                :class="
+                  row.is_clan_battle
+                    ? 'pcr-soft-tag--success'
+                    : 'pcr-soft-tag--muted'
+                "
+              >
+                {{ row.is_clan_battle ? '是' : '否' }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <!-- 获取方式 -->
+          <ElTableColumn label="获取方式" min-width="80" align="center">
+            <template #default="{ row }">
+              {{ getObtainLabel(row.obtain) }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 概率 -->
+          <ElTableColumn label="概率" min-width="56" align="center">
+            <template #default="{ row }">
+              {{ getProbabilityLabel(row.probability) }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 使用次数 -->
+          <ElTableColumn label="使用次数" min-width="76" align="center">
+            <template #default="{ row }">
+              {{ row.use_times ?? 0 }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 更新时间 -->
+          <ElTableColumn label="更新时间" min-width="84" align="center">
+            <template #default="{ row }">
+              {{ row.up_time || '-' }}
+            </template>
+          </ElTableColumn>
+
+          <!-- 状态 -->
+          <ElTableColumn label="状态" min-width="60" align="center">
+            <template #default="{ row }">
+              <span
+                class="pcr-soft-tag"
+                :class="
+                  row.status ? 'pcr-soft-tag--success' : 'pcr-soft-tag--danger'
+                "
+              >
+                {{ row.status ? '启用' : '禁用' }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <!-- 操作 -->
+          <ElTableColumn label="操作" width="160" fixed="right" align="center">
+            <template #default="{ row }">
+              <div class="table-actions">
+                <ElButton
+                  v-if="canDetail"
+                  link
+                  type="primary"
+                  @click="handleDetail(row)"
+                >
+                  详情
+                </ElButton>
+
+                <ElButton
+                  v-if="canUpdate"
+                  link
+                  type="primary"
+                  @click="handleEdit(row)"
+                >
+                  编辑
+                </ElButton>
+
+                <ElButton
+                  v-if="canDelete"
+                  link
+                  type="danger"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </ElButton>
+
+                <span
+                  v-if="!canDetail && !canUpdate && !canDelete"
+                  class="no-action"
+                >
+                  无操作权限
+                </span>
+              </div>
+            </template>
+          </ElTableColumn>
+
+          <template #empty>
+            <div class="table-empty">
+              <ElEmpty :image-size="72" description="暂无游戏角色数据" />
+              <p>调整筛选条件后再试</p>
+            </div>
+          </template>
+        </ElTable>
+
+        <!-- 分页 -->
+        <div v-if="total > 0" class="pcr-table-foot">
+          <ElPagination
+            v-model:current-page="page"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[20, 50, 100]"
+            class="pcr-pagination"
+            layout="total, sizes, prev, pager, next, jumper"
+            @current-change="handlePageChange"
+            @size-change="handlePageSizeChange"
+          />
+        </div>
+      </template>
+    </section>
 
     <!-- 新增 / 编辑 -->
     <ElDialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="720px"
+      modal-class="pcr-dialog-modal"
+      width="min(720px, calc(100vw - 24px))"
       :close-on-click-modal="false"
     >
-      <ElForm
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="110px"
-      >
-        <ElRow :gutter="20">
-          <ElCol :span="12">
-            <ElFormItem label="角色ID" prop="id">
-              <ElInputNumber
-                v-model="form.id"
-                :min="1"
-                :disabled="isEdit"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </ElFormItem>
-          </ElCol>
+      <div class="dialog-body">
+        <ElForm
+          ref="formRef"
+          :model="form"
+          :rules="formRules"
+          class="dialog-form"
+          label-position="top"
+        >
+          <ElRow :gutter="20">
+            <ElCol :span="12">
+              <ElFormItem label="角色ID" prop="id">
+                <ElInputNumber
+                  v-model="form.id"
+                  :min="1"
+                  :disabled="isEdit"
+                  controls-position="right"
+                  style="width: 100%"
+                />
+              </ElFormItem>
+            </ElCol>
 
-          <ElCol :span="12">
-            <ElFormItem label="昵称" prop="nickname">
-              <ElInput
-                v-model="form.nickname"
-                placeholder="请输入昵称"
-                maxlength="100"
-                show-word-limit
-              />
-            </ElFormItem>
-          </ElCol>
+            <ElCol :span="12">
+              <ElFormItem label="昵称" prop="nickname">
+                <ElInput
+                  v-model="form.nickname"
+                  placeholder="请输入昵称"
+                  maxlength="100"
+                  show-word-limit
+                />
+              </ElFormItem>
+            </ElCol>
 
-          <ElCol :span="12">
-            <ElFormItem label="名称A" prop="name_a">
-              <ElInput
-                v-model="form.name_a"
-                placeholder="请输入名称A"
-                maxlength="100"
-                show-word-limit
-              />
-            </ElFormItem>
-          </ElCol>
+            <ElCol :span="12">
+              <ElFormItem label="名称A" prop="name_a">
+                <ElInput
+                  v-model="form.name_a"
+                  placeholder="请输入名称A"
+                  maxlength="100"
+                  show-word-limit
+                />
+              </ElFormItem>
+            </ElCol>
 
-          <ElCol :span="12">
-            <ElFormItem label="名称B">
-              <ElInput
-                v-model="form.name_b"
-                placeholder="可选"
-                maxlength="100"
-                show-word-limit
-              />
-            </ElFormItem>
-          </ElCol>
+            <ElCol :span="12">
+              <ElFormItem label="名称B">
+                <ElInput
+                  v-model="form.name_b"
+                  placeholder="可选"
+                  maxlength="100"
+                  show-word-limit
+                />
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 属性 -->
-          <ElCol :span="12">
-            <ElFormItem label="属性" prop="element">
-              <ElSelect
-                v-model="form.element"
-                class="element-select"
-                style="width: 100%"
-              >
-                <ElOption
-                  v-for="item in elementOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                  class="element-select-option"
+            <!-- 属性 -->
+            <ElCol :span="12">
+              <ElFormItem label="属性" prop="element">
+                <ElSelect
+                  v-model="form.element"
+                  class="element-select"
+                  style="width: 100%"
                 >
-                  <div class="element-option">
-                    <ElTag :type="item.type" effect="dark" size="small">
-                      {{ item.label }}
-                    </ElTag>
-                  </div>
-                </ElOption>
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+                  <ElOption
+                    v-for="item in elementOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                    class="element-select-option"
+                  >
+                    <div class="element-option">
+                      <span
+                        class="pcr-soft-tag"
+                        :class="`pcr-soft-tag--${getElementTone(item.value)}`"
+                      >
+                        {{ item.label }}
+                      </span>
+                    </div>
+                  </ElOption>
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 攻击类型 -->
-          <ElCol :span="12">
-            <ElFormItem label="攻击类型" prop="atk_type">
-              <ElSelect v-model="form.atk_type" style="width: 100%">
-                <ElOption label="魔法" :value="-1" />
-                <ElOption label="辅助" :value="0" />
-                <ElOption label="物理" :value="1" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 攻击类型 -->
+            <ElCol :span="12">
+              <ElFormItem label="攻击类型" prop="atk_type">
+                <ElSelect v-model="form.atk_type" style="width: 100%">
+                  <ElOption label="魔法" :value="-1" />
+                  <ElOption label="辅助" :value="0" />
+                  <ElOption label="物理" :value="1" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 搜索范围 -->
-          <ElCol :span="12">
-            <ElFormItem label="搜索范围" prop="search_area_width">
-              <ElInputNumber
-                v-model="form.search_area_width"
-                :min="0"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </ElFormItem>
-          </ElCol>
+            <!-- 搜索范围 -->
+            <ElCol :span="12">
+              <ElFormItem label="搜索范围" prop="search_area_width">
+                <ElInputNumber
+                  v-model="form.search_area_width"
+                  :min="0"
+                  controls-position="right"
+                  style="width: 100%"
+                />
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 位置 -->
-          <ElCol :span="12">
-            <ElFormItem label="位置" prop="position">
-              <ElSelect v-model="form.position" style="width: 100%">
-                <ElOption label="前卫" :value="1" />
-                <ElOption label="中卫" :value="2" />
-                <ElOption label="后卫" :value="3" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 位置 -->
+            <ElCol :span="12">
+              <ElFormItem label="位置" prop="position">
+                <ElSelect v-model="form.position" style="width: 100%">
+                  <ElOption label="前卫" :value="1" />
+                  <ElOption label="中卫" :value="2" />
+                  <ElOption label="后卫" :value="3" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 获取方式 -->
-          <ElCol :span="12">
-            <ElFormItem label="获取方式" prop="obtain">
-              <ElSelect v-model="form.obtain" style="width: 100%">
-                <ElOption label="抽卡获取" :value="1" />
-                <ElOption label="活动获取" :value="2" />
-                <ElOption label="兑换获取" :value="3" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 获取方式 -->
+            <ElCol :span="12">
+              <ElFormItem label="获取方式" prop="obtain">
+                <ElSelect v-model="form.obtain" style="width: 100%">
+                  <ElOption label="抽卡获取" :value="1" />
+                  <ElOption label="活动获取" :value="2" />
+                  <ElOption label="兑换获取" :value="3" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 概率 -->
-          <ElCol :span="12">
-            <ElFormItem label="概率" prop="probability">
-              <ElSelect v-model="form.probability" style="width: 100%">
-                <ElOption label="0.7%" :value="1" />
-                <ElOption label="1.4%" :value="2" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 概率 -->
+            <ElCol :span="12">
+              <ElFormItem label="概率" prop="probability">
+                <ElSelect v-model="form.probability" style="width: 100%">
+                  <ElOption label="0.7%" :value="1" />
+                  <ElOption label="1.4%" :value="2" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 会战角色 -->
-          <ElCol :span="12">
-            <ElFormItem label="会战角色">
-              <ElSelect v-model="form.is_clan_battle" style="width: 100%">
-                <ElOption label="是" :value="true" />
-                <ElOption label="否" :value="false" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 会战角色 -->
+            <ElCol :span="12">
+              <ElFormItem label="会战角色">
+                <ElSelect v-model="form.is_clan_battle" style="width: 100%">
+                  <ElOption label="是" :value="true" />
+                  <ElOption label="否" :value="false" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 状态 -->
-          <ElCol :span="12">
-            <ElFormItem label="状态">
-              <ElSelect v-model="form.status" style="width: 100%">
-                <ElOption label="启用" :value="true" />
-                <ElOption label="禁用" :value="false" />
-              </ElSelect>
-            </ElFormItem>
-          </ElCol>
+            <!-- 状态 -->
+            <ElCol :span="12">
+              <ElFormItem label="状态">
+                <ElSelect v-model="form.status" style="width: 100%">
+                  <ElOption label="启用" :value="true" />
+                  <ElOption label="禁用" :value="false" />
+                </ElSelect>
+              </ElFormItem>
+            </ElCol>
 
-          <!-- 更新时间 -->
-          <ElCol :span="12">
-            <ElFormItem label="更新时间">
-              <ElDatePicker
-                v-model="form.up_time"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择日期"
-                style="width: 100%"
-              />
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-      </ElForm>
+            <!-- 更新时间 -->
+            <ElCol :span="12">
+              <ElFormItem label="更新时间">
+                <ElDatePicker
+                  v-model="form.up_time"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="请选择日期"
+                  style="width: 100%"
+                />
+              </ElFormItem>
+            </ElCol>
+          </ElRow>
+        </ElForm>
+      </div>
 
       <template #footer>
-        <ElButton :disabled="dialogLoading" @click="dialogVisible = false">
-          取消
-        </ElButton>
+        <div class="dialog-footer">
+          <ElButton
+            class="dialog-cancel"
+            :disabled="dialogLoading"
+            @click="dialogVisible = false"
+          >
+            取消
+          </ElButton>
 
-        <ElButton type="primary" :loading="dialogLoading" @click="handleSubmit">
-          保存
-        </ElButton>
+          <ElButton
+            type="primary"
+            class="dialog-submit"
+            :loading="dialogLoading"
+            @click="handleSubmit"
+          >
+            保存
+          </ElButton>
+        </div>
       </template>
     </ElDialog>
 
     <!-- 详情 -->
-    <ElDialog v-model="detailVisible" title="游戏角色详情" width="760px">
-      <div v-loading="detailLoading">
+    <ElDialog
+      v-model="detailVisible"
+      modal-class="pcr-dialog-modal"
+      title="游戏角色详情"
+      width="min(760px, calc(100vw - 24px))"
+    >
+      <div v-loading="detailLoading" class="dialog-body">
         <template v-if="detailData">
           <div class="detail-header">
             <ElImage
@@ -1218,12 +1321,12 @@ onMounted(() => {
             </ElDescriptionsItem>
 
             <ElDescriptionsItem label="属性">
-              <ElTag
-                :type="getElementTagType(detailData.element)"
-                effect="dark"
+              <span
+                class="pcr-soft-tag"
+                :class="`pcr-soft-tag--${getElementTone(detailData.element)}`"
               >
                 {{ getElementLabel(detailData.element) }}
-              </ElTag>
+              </span>
             </ElDescriptionsItem>
 
             <ElDescriptionsItem label="攻击类型">
@@ -1255,9 +1358,16 @@ onMounted(() => {
             </ElDescriptionsItem>
 
             <ElDescriptionsItem label="状态">
-              <ElTag :type="detailData.status ? 'success' : 'danger'">
+              <span
+                class="pcr-soft-tag"
+                :class="
+                  detailData.status
+                    ? 'pcr-soft-tag--success'
+                    : 'pcr-soft-tag--danger'
+                "
+              >
                 {{ detailData.status ? '启用' : '禁用' }}
-              </ElTag>
+              </span>
             </ElDescriptionsItem>
 
             <ElDescriptionsItem label="更新时间">
@@ -1276,38 +1386,67 @@ onMounted(() => {
 
 <style scoped>
 .game-role-page {
-  padding: 16px;
+  min-width: 0;
 }
 
-.search-card {
-  margin-bottom: 16px;
-}
-
-.table-card {
-  margin-bottom: 16px;
-}
-
-.search-actions {
+.table-state {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: var(--pcr-space-3);
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: var(--pcr-space-7) var(--pcr-space-4);
+  text-align: center;
+}
+
+.table-state__title {
+  margin: 0;
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-secondary);
+}
+
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-2);
+  align-items: center;
+  padding: var(--pcr-space-6) 0;
+}
+
+.table-empty p {
+  margin: 0;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
 }
 
 .role-avatar {
-  width: 52px;
-  height: 52px;
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
   border-radius: 8px;
 }
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 16px;
+.pcr-table-shell :deep(.el-table .cell) {
+  padding: 0 6px;
 }
 
 .no-action {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
+  color: var(--pcr-text-muted);
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.table-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 /*
@@ -1329,10 +1468,45 @@ onMounted(() => {
   line-height: normal;
 }
 
-.element-option :deep(.el-tag) {
+.element-option .pcr-soft-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.dialog-form :deep(.el-form-item) {
+  margin-bottom: var(--pcr-space-4);
+}
+
+.dialog-form :deep(.el-form-item__label) {
+  padding: 0 0 var(--pcr-space-1);
+  font-size: var(--pcr-font-size-caption);
+  line-height: 1.4;
+  color: var(--pcr-text-secondary);
+}
+
+.dialog-form :deep(.el-select),
+.dialog-form :deep(.el-date-editor),
+.dialog-form :deep(.el-input-number) {
+  width: 100%;
+}
+
+.dialog-form :deep(.el-input__wrapper),
+.dialog-form :deep(.el-select__wrapper) {
+  min-height: 36px;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: var(--pcr-space-2);
+  justify-content: flex-end;
+}
+
+.dialog-footer :deep(.el-button) {
+  height: 36px;
+  padding: 0 18px;
+  margin-left: 0;
+  border-radius: var(--pcr-radius-md);
 }
 
 .detail-header {
@@ -1356,36 +1530,96 @@ onMounted(() => {
 
 .detail-name {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
 }
 
 .detail-nickname {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--pcr-text-secondary);
 }
 
 .detail-descriptions {
   margin-top: 8px;
 }
 
-/*
- * 暗属性使用紫色。
- *
- * Element Plus 默认没有紫色 Tag 类型，
- * 所以通过 :deep() 覆盖暗属性对应的 info Tag。
- */
-.element-option :deep(.el-tag--info),
-:deep(.el-table .el-tag--info) {
-  --el-tag-bg-color: #722ed1;
-  --el-tag-border-color: #722ed1;
-  --el-tag-hover-color: #722ed1;
-  --el-tag-text-color: #fff;
+.detail-descriptions :deep(.el-descriptions__body) {
+  background: var(--pcr-bg-surface);
 }
 
-:deep(.el-descriptions .el-tag--info) {
-  --el-tag-bg-color: #722ed1;
-  --el-tag-border-color: #722ed1;
-  --el-tag-hover-color: #722ed1;
-  --el-tag-text-color: #fff;
+.detail-descriptions :deep(.el-descriptions__label) {
+  color: var(--pcr-text-secondary);
+  background: var(--pcr-bg-subtle);
+}
+
+.detail-descriptions :deep(.el-descriptions__content) {
+  color: var(--pcr-text-primary);
+  background: var(--pcr-bg-surface);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .dialog-form :deep(.el-col-12) {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .detail-descriptions {
+    overflow-x: auto;
+  }
+
+  .detail-name {
+    font-size: 18px;
+  }
+
+  .detail-avatar {
+    width: 72px;
+    height: 72px;
+    margin-right: 12px;
+  }
+}
+</style>
+
+<style>
+/*
+ * 弹窗容器使用 flex 布局，正文区独立滚动，保证页脚按钮始终可见。
+ * 该类仅由本页面的 modal-class 使用。
+ */
+.pcr-dialog-modal .el-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(92vh - 24px);
+  margin-top: 8vh !important;
+  overflow: hidden;
+  background: var(--pcr-bg-surface);
+  border: var(--pcr-border-width) solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+  box-shadow: var(--pcr-shadow-overlay);
+}
+
+.pcr-dialog-modal .el-dialog__header {
+  padding-bottom: var(--pcr-space-3);
+  margin-right: 0;
+  border-bottom: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-dialog-modal .el-dialog__title {
+  font-size: var(--pcr-font-size-section-title);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
+}
+
+.pcr-dialog-modal .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pcr-dialog-modal .el-dialog__footer {
+  padding-top: var(--pcr-space-3);
+  border-top: var(--pcr-border-width) solid var(--pcr-border);
 }
 </style>

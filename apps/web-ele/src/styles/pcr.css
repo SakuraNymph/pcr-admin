@@ -1,0 +1,513 @@
+:root {
+  --pcr-font-family: var(--font-family);
+  --pcr-font-size-page-title: 24px;
+  --pcr-font-size-section-title: 18px;
+  --pcr-font-size-body: 14px;
+  --pcr-font-size-small: 13px;
+  --pcr-font-size-caption: 12px;
+  --pcr-font-weight-regular: 400;
+  --pcr-font-weight-medium: 500;
+  --pcr-font-weight-semibold: 600;
+  --pcr-font-weight-bold: 700;
+  --pcr-line-height-tight: 1.3;
+  --pcr-line-height-body: 1.6;
+  --pcr-letter-spacing-tight: -0.02em;
+  --pcr-letter-spacing-kicker: 0.12em;
+
+  --pcr-color-primary: #3563f4;
+  --pcr-color-primary-hover: #2b54d9;
+  --pcr-color-primary-active: #2347c4;
+  --pcr-color-primary-soft: #eef3ff;
+  --pcr-color-primary-foreground: #fff;
+  --pcr-color-secondary: #7658f6;
+  --pcr-color-secondary-soft: #f3f0ff;
+  --pcr-color-secondary-foreground: #fff;
+
+  --pcr-bg-page: #f5f7fb;
+  --pcr-bg-surface: #fff;
+  --pcr-bg-subtle: #f8fafd;
+
+  --pcr-text-primary: #172033;
+  --pcr-text-secondary: #5e6a80;
+  --pcr-text-muted: #8c96a8;
+
+  --pcr-border: #e5e9f2;
+  --pcr-border-strong: #d5dbe7;
+
+  --pcr-success: #1f9d78;
+  --pcr-success-soft: #e9f8f2;
+  --pcr-warning: #c98213;
+  --pcr-warning-soft: #fff7e8;
+  --pcr-danger: #d64a4a;
+  --pcr-danger-soft: #fdeeee;
+  --pcr-info: #758196;
+  --pcr-info-soft: #f0f3f7;
+
+  --pcr-space-1: 4px;
+  --pcr-space-2: 8px;
+  --pcr-space-3: 12px;
+  --pcr-space-4: 16px;
+  --pcr-space-5: 20px;
+  --pcr-space-6: 24px;
+  --pcr-space-7: 32px;
+  --pcr-space-8: 40px;
+
+  --pcr-radius-sm: 6px;
+  --pcr-radius-md: 8px;
+  --pcr-radius-lg: 12px;
+  --pcr-radius-pill: 999px;
+
+  --pcr-border-width: 1px;
+  --pcr-shadow-surface: 0 1px 2px rgb(23 32 51 / 4%);
+  --pcr-shadow-overlay: 0 8px 24px rgb(23 32 51 / 6%);
+  --pcr-shadow-focus: 0 0 0 3px rgb(53 99 244 / 16%);
+}
+
+.dark {
+  --pcr-color-primary: #7b95ff;
+  --pcr-color-primary-hover: #94aaff;
+  --pcr-color-primary-active: #6682f2;
+  --pcr-color-primary-soft: #18244a;
+  --pcr-color-primary-foreground: #081026;
+  --pcr-color-secondary: #a28bff;
+  --pcr-color-secondary-soft: #272151;
+  --pcr-color-secondary-foreground: #0d0920;
+
+  --pcr-bg-page: #0d1320;
+  --pcr-bg-surface: #141c2b;
+  --pcr-bg-subtle: #192335;
+
+  --pcr-text-primary: #eef3fb;
+  --pcr-text-secondary: #b7c2d4;
+  --pcr-text-muted: #8895aa;
+
+  --pcr-border: #263244;
+  --pcr-border-strong: #36445a;
+
+  --pcr-success: #4dc7a3;
+  --pcr-success-soft: #153b32;
+  --pcr-warning: #e5ac4e;
+  --pcr-warning-soft: #3a2c16;
+  --pcr-danger: #f07d7d;
+  --pcr-danger-soft: #3b1f23;
+  --pcr-info: #9ca8bb;
+  --pcr-info-soft: #202a3a;
+
+  --pcr-shadow-surface: 0 1px 2px rgb(0 0 0 / 25%);
+  --pcr-shadow-overlay: 0 8px 24px rgb(0 0 0 / 35%);
+  --pcr-shadow-focus: 0 0 0 3px rgb(123 149 255 / 24%);
+}
+
+.pcr-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-4);
+  min-width: 0;
+  padding: var(--pcr-space-5);
+}
+
+.pcr-surface {
+  background: var(--pcr-bg-surface);
+  border: var(--pcr-border-width) solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+}
+
+.pcr-page-title {
+  margin: 0;
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-page-title);
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-tight);
+  color: var(--pcr-text-primary);
+  letter-spacing: var(--pcr-letter-spacing-tight);
+}
+
+.pcr-section-title {
+  margin: 0;
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-section-title);
+  font-weight: var(--pcr-font-weight-semibold);
+  line-height: var(--pcr-line-height-tight);
+  color: var(--pcr-text-primary);
+  letter-spacing: var(--pcr-letter-spacing-tight);
+}
+
+.pcr-kicker {
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-caption);
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-tight);
+  color: var(--pcr-color-primary);
+  letter-spacing: var(--pcr-letter-spacing-kicker);
+}
+
+.pcr-text-secondary {
+  color: var(--pcr-text-secondary);
+}
+
+.pcr-text-muted {
+  color: var(--pcr-text-muted);
+}
+
+/* =========================================================
+   PCR admin page shell (opt-in, stage 6)
+   仅在页面主动使用这些类时生效，不覆盖既有页面样式。
+   ========================================================= */
+
+.pcr-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-1);
+  min-width: 0;
+}
+
+.pcr-page-header__kicker {
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-caption);
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-tight);
+  color: var(--pcr-color-primary);
+  letter-spacing: var(--pcr-letter-spacing-kicker);
+}
+
+.pcr-page-header__title {
+  margin: 0;
+  font-family: var(--pcr-font-family);
+  font-size: var(--pcr-font-size-page-title);
+  font-weight: var(--pcr-font-weight-bold);
+  line-height: var(--pcr-line-height-tight);
+  color: var(--pcr-text-primary);
+  letter-spacing: var(--pcr-letter-spacing-tight);
+}
+
+.pcr-page-header__desc {
+  margin: 0;
+  font-size: var(--pcr-font-size-small);
+  line-height: var(--pcr-line-height-body);
+  color: var(--pcr-text-secondary);
+}
+
+.pcr-filter-panel {
+  min-width: 0;
+  padding: var(--pcr-space-4) var(--pcr-space-5);
+}
+
+.pcr-table-shell {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--pcr-bg-surface);
+  border: var(--pcr-border-width) solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+}
+
+.pcr-table-shell .el-table {
+  width: 100%;
+  --el-table-bg-color: var(--pcr-bg-surface);
+  --el-table-tr-bg-color: var(--pcr-bg-surface);
+  --el-table-expanded-cell-bg-color: var(--pcr-bg-surface);
+  --el-table-header-bg-color: var(--pcr-bg-subtle);
+  --el-table-border-color: var(--pcr-border);
+  --el-table-row-hover-bg-color: var(--pcr-bg-subtle);
+}
+
+.pcr-table-shell .el-table__inner-wrapper::before {
+  display: none;
+}
+
+.pcr-table-shell .el-table th.el-table__cell {
+  height: 44px;
+  padding: 0 6px;
+  font-size: var(--pcr-font-size-caption);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-secondary);
+  background: var(--pcr-bg-subtle);
+  border-bottom: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-table-shell .el-table td.el-table__cell {
+  height: 56px;
+  padding: 8px 6px;
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-primary);
+  background: var(--pcr-bg-surface);
+  border-bottom: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-table-shell .el-table__row:hover > td.el-table__cell {
+  background: var(--pcr-bg-subtle);
+}
+
+.pcr-table-shell .el-table__empty-block {
+  background: var(--pcr-bg-surface);
+}
+
+.pcr-table-shell .el-table-fixed-column--right {
+  background: var(--pcr-bg-surface);
+}
+
+.pcr-table-shell .el-table__row:hover .el-table-fixed-column--right {
+  background: var(--pcr-bg-subtle);
+}
+
+.pcr-table-foot {
+  padding: var(--pcr-space-3) var(--pcr-space-5);
+  overflow-x: auto;
+  border-top: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-pagination {
+  justify-content: flex-end;
+}
+
+.pcr-soft-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 var(--pcr-space-2);
+  font-size: var(--pcr-font-size-caption);
+  font-weight: var(--pcr-font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  border: var(--pcr-border-width) solid transparent;
+  border-radius: var(--pcr-radius-sm);
+}
+
+.pcr-soft-tag--success {
+  color: var(--pcr-success);
+  background: var(--pcr-success-soft);
+}
+
+.pcr-soft-tag--muted {
+  color: var(--pcr-text-muted);
+  background: var(--pcr-bg-subtle);
+}
+
+@media (max-width: 600px) {
+  .pcr-page-header__title {
+    font-size: 22px;
+  }
+
+  .pcr-filter-panel {
+    padding: var(--pcr-space-4);
+  }
+
+  .pcr-table-foot {
+    padding: var(--pcr-space-3) var(--pcr-space-4);
+  }
+
+  .pcr-pagination {
+    flex-wrap: wrap;
+    row-gap: var(--pcr-space-2);
+    justify-content: flex-start;
+  }
+}
+
+/* =========================================================
+   PCR soft tag tones (opt-in, stage 6 step 2)
+   仅扩展 .pcr-soft-tag 语义色，供页面主动使用。
+   ========================================================= */
+
+.pcr-soft-tag--primary {
+  color: var(--pcr-color-primary);
+  background: var(--pcr-color-primary-soft);
+}
+
+.pcr-soft-tag--secondary {
+  color: var(--pcr-color-secondary);
+  background: var(--pcr-color-secondary-soft);
+}
+
+.pcr-soft-tag--info {
+  color: var(--pcr-info);
+  background: var(--pcr-info-soft);
+}
+
+.pcr-soft-tag--warning {
+  color: var(--pcr-warning);
+  background: var(--pcr-warning-soft);
+}
+
+.pcr-soft-tag--danger {
+  color: var(--pcr-danger);
+  background: var(--pcr-danger-soft);
+}
+
+/* =========================================================
+   PCR compact filter panel (opt-in, stage 6 compact pass)
+   仅在页面主动使用 .pcr-filter-panel--compact 时生效。
+   ========================================================= */
+
+.pcr-filter-panel--compact {
+  padding: var(--pcr-space-3) var(--pcr-space-4);
+}
+
+@media (max-width: 600px) {
+  .pcr-filter-panel--compact {
+    padding: var(--pcr-space-3);
+  }
+}
+
+/* =========================================================
+   PCR compact table page (opt-in, stage 7)
+   表格页统一：无 Hero、无筛选标题、标签与控件同行、
+   表格顶部只保留计数与业务操作。
+   仅在页面主动使用 .pcr-filter-row / .pcr-table-head 时生效。
+   ========================================================= */
+
+.pcr-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pcr-space-2) var(--pcr-space-4);
+  align-items: center;
+  min-width: 0;
+}
+
+.pcr-filter-row .el-form-item {
+  flex: 0 1 var(--pcr-filter-item-width, 200px);
+  width: var(--pcr-filter-item-width, 200px);
+  min-width: 0;
+  margin: 0;
+}
+
+.pcr-filter-row .el-form-item__label {
+  box-sizing: border-box;
+  flex: none;
+  height: 32px;
+  width: auto;
+  padding: 0 var(--pcr-space-1) 0 0;
+  margin: 0;
+  text-align: left;
+  font-size: var(--pcr-font-size-caption);
+  line-height: 32px;
+  color: var(--pcr-text-secondary);
+  white-space: nowrap;
+}
+
+.pcr-filter-row .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pcr-filter-row .el-input,
+.pcr-filter-row .el-date-editor,
+.pcr-filter-row .el-input-number,
+.pcr-filter-row .el-select {
+  width: 100%;
+}
+
+.pcr-filter-row .el-input__wrapper,
+.pcr-filter-row .el-select__wrapper {
+  min-height: 32px;
+}
+
+.pcr-filter-item--xs {
+  --pcr-filter-item-width: 168px;
+}
+
+.pcr-filter-item--sm {
+  --pcr-filter-item-width: 192px;
+}
+
+.pcr-filter-item--md {
+  --pcr-filter-item-width: 220px;
+}
+
+.pcr-filter-item--lg {
+  --pcr-filter-item-width: 252px;
+}
+
+.pcr-filter-item--range {
+  --pcr-filter-item-width: 300px;
+}
+
+.pcr-filter-actions {
+  display: flex;
+  flex: none;
+  gap: var(--pcr-space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+.pcr-filter-actions .el-button {
+  height: 32px;
+  padding: 0 14px;
+  margin-left: 0;
+  border-radius: var(--pcr-radius-md);
+}
+
+.pcr-filter-actions .pcr-filter-reset {
+  color: var(--pcr-text-secondary);
+  background: var(--pcr-bg-surface);
+  border-color: var(--pcr-border);
+}
+
+.pcr-filter-range {
+  display: flex;
+  gap: var(--pcr-space-2);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.pcr-filter-range .el-date-editor {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.pcr-filter-range__sep {
+  flex: none;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+
+.pcr-table-head {
+  display: flex;
+  gap: var(--pcr-space-3);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--pcr-space-2) var(--pcr-space-4);
+  border-bottom: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-table-head__count {
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+  white-space: nowrap;
+}
+
+.pcr-table-head__tools {
+  display: flex;
+  flex: none;
+  gap: var(--pcr-space-2);
+  align-items: center;
+}
+
+.pcr-table-head .el-button {
+  height: 32px;
+  padding: 0 14px;
+  margin-left: 0;
+  border-radius: var(--pcr-radius-md);
+}
+
+@media (max-width: 600px) {
+  .pcr-filter-row .el-form-item {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .pcr-filter-actions {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  .pcr-filter-actions .el-button {
+    flex: 1;
+  }
+
+  .pcr-table-head {
+    padding: var(--pcr-space-2) var(--pcr-space-3);
+  }
+}

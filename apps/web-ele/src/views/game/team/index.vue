@@ -7,10 +7,7 @@ import { useAccess } from '@vben/access';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
-import {
-  deleteTeamLinkApi,
-  updateTeamLinkStatusApi,
-} from '#/api/core/team';
+import { deleteTeamLinkApi, updateTeamLinkStatusApi } from '#/api/core/team';
 
 import TeamAddDialog from './components/TeamAddDialog.vue';
 import TeamEditDialog from './components/TeamEditDialog.vue';
@@ -23,6 +20,8 @@ const { hasAccessByCodes } = useAccess();
 const {
   damageSort,
   displayTableData,
+  error,
+  errorStatus,
   handleSearch,
   loadData,
   loading,
@@ -93,30 +92,42 @@ async function handleRestore(row: TeamListItem) {
 </script>
 
 <template>
-  <div class="page">
-    <TeamFilters
-      v-if="canList"
-      :filters="searchForm"
-      @update:filters="updateFilters"
-      @search="handleSearch"
-      @reset="resetSearch"
-    />
-    <TeamTable
-      v-if="canList"
-      :rows="displayTableData"
-      :total="total"
-      :loading="loading"
-      :damage-sort="damageSort"
-      :can-create="canCreate"
-      :can-update-link="canUpdateLink"
-      :can-delete-link="canDeleteLink"
-      :can-update-link-status="canUpdateLinkStatus"
-      @add="openAddDialog"
-      @edit="openEditDialog"
-      @hide="handleDelete"
-      @restore="handleRestore"
-      @toggle-damage-sort="toggleDamageSort"
-    />
+  <div class="page pcr-page">
+    <div v-if="!canList" class="pcr-surface access-panel">
+      <span class="pcr-kicker">ACCESS</span>
+      <h2 class="pcr-section-title">暂无访问权限</h2>
+      <p class="access-description">
+        当前账号没有作业列表权限，请联系管理员开通后重试。
+      </p>
+    </div>
+
+    <template v-else>
+      <TeamFilters
+        :filters="searchForm"
+        @update:filters="updateFilters"
+        @search="handleSearch"
+        @reset="resetSearch"
+      />
+      <TeamTable
+        :rows="displayTableData"
+        :total="total"
+        :loading="loading"
+        :error="error"
+        :error-status="errorStatus"
+        :damage-sort="damageSort"
+        :can-create="canCreate"
+        :can-update-link="canUpdateLink"
+        :can-delete-link="canDeleteLink"
+        :can-update-link-status="canUpdateLinkStatus"
+        @add="openAddDialog"
+        @edit="openEditDialog"
+        @hide="handleDelete"
+        @restore="handleRestore"
+        @retry="loadData"
+        @toggle-damage-sort="toggleDamageSort"
+      />
+    </template>
+
     <TeamAddDialog v-model:visible="addDialogVisible" @submitted="loadData" />
     <TeamEditDialog v-model:team="editingTeam" @saved="loadData" />
   </div>
@@ -125,20 +136,28 @@ async function handleRestore(row: TeamListItem) {
 <style scoped>
 .page {
   min-height: 100%;
-  padding: 16px;
-  color: var(--el-text-color-primary);
-  background: var(--el-bg-color-page);
+  color: var(--pcr-text-primary);
+  background: var(--pcr-bg-page);
+}
+
+.access-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-2);
+  align-items: flex-start;
+  padding: var(--pcr-space-7);
+}
+
+.access-description {
+  margin: 0;
+  font-size: var(--pcr-font-size-small);
+  line-height: var(--pcr-line-height-body);
+  color: var(--pcr-text-secondary);
 }
 
 @media (max-width: 600px) {
   .page {
-    padding: 8px;
-  }
-}
-
-@media (max-width: 380px) {
-  .page {
-    padding: 6px;
+    padding: var(--pcr-space-4);
   }
 }
 </style>

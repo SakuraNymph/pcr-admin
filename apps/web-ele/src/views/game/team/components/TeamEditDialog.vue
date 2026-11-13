@@ -124,9 +124,7 @@ async function submitEditTeam() {
     author: editForm.author.trim(),
     link: editForm.link.trim(),
     difficulty: Number(editForm.difficulty),
-    damage: isFixedDamageStage(editForm.stage)
-      ? null
-      : Number(editForm.damage),
+    damage: isFixedDamageStage(editForm.stage) ? null : Number(editForm.damage),
   };
 
   editLoading.value = true;
@@ -146,8 +144,10 @@ async function submitEditTeam() {
 <template>
   <ElDialog
     v-model="editDialogVisible"
+    class="team-edit-dialog"
     title="编辑作业"
-    width="560px"
+    width="min(560px, calc(100vw - 24px))"
+    top="8vh"
     :close-on-click-modal="false"
   >
     <ElForm :model="editForm" label-width="90px">
@@ -158,10 +158,10 @@ async function submitEditTeam() {
         <ElInput v-model="editForm.link" maxlength="1000" />
       </ElFormItem>
       <ElFormItem label="阶段">
-        <span>{{ getStageText(editForm.stage) }}</span>
+        <span class="readonly-value">{{ getStageText(editForm.stage) }}</span>
       </ElFormItem>
       <ElFormItem label="Boss">
-        <span>{{ editForm.boss }}王</span>
+        <span class="readonly-value">{{ editForm.boss }}王</span>
       </ElFormItem>
       <ElFormItem label="难度">
         <ElSelect v-model="editForm.difficulty" style="width: 100%">
@@ -184,24 +184,28 @@ async function submitEditTeam() {
               : '请输入1-99999的整数'
           "
         />
-        <div
-          v-if="isFixedDamageStage(editForm.stage)"
-          class="input-help-text"
-        >
+        <div v-if="isFixedDamageStage(editForm.stage)" class="input-help-text">
           B/C 阶段伤害由阶段和 Boss 自动计算。
         </div>
       </ElFormItem>
       <ElFormItem label="角色">
         <div class="edit-role-list">
-          <span v-for="role in editForm.roles" :key="role.role_id">
+          <span
+            v-for="role in editForm.roles"
+            :key="role.role_id"
+            class="edit-role-tag"
+          >
             {{ role.nickname }}
           </span>
         </div>
       </ElFormItem>
     </ElForm>
     <template #footer>
-      <ElButton @click="editDialogVisible = false">取消</ElButton>
+      <ElButton class="dialog-button" @click="editDialogVisible = false">
+        取消
+      </ElButton>
       <ElButton
+        class="dialog-button"
         type="primary"
         :loading="editLoading"
         @click="submitEditTeam"
@@ -212,24 +216,102 @@ async function submitEditTeam() {
   </ElDialog>
 </template>
 
-<style scoped>
-.input-help-text {
-  margin-top: 5px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+<style>
+.team-edit-dialog {
+  overflow: hidden;
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+  box-shadow: var(--pcr-shadow-overlay);
 }
 
-.edit-role-list {
+.team-edit-dialog .el-dialog__header {
+  padding: var(--pcr-space-4) var(--pcr-space-5);
+  margin-right: 0;
+  border-bottom: 1px solid var(--pcr-border);
+}
+
+.team-edit-dialog .el-dialog__title {
+  font-size: var(--pcr-font-size-body);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
+}
+
+.team-edit-dialog .el-dialog__body {
+  padding: var(--pcr-space-5);
+}
+
+.team-edit-dialog .el-dialog__footer {
+  padding: var(--pcr-space-3) var(--pcr-space-5) var(--pcr-space-4);
+  border-top: 1px solid var(--pcr-border);
+}
+
+.team-edit-dialog .el-form-item__label {
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-secondary);
+}
+
+.team-edit-dialog .el-input__wrapper,
+.team-edit-dialog .el-select__wrapper {
+  min-height: 36px;
+  background: var(--pcr-bg-surface);
+  border-radius: var(--pcr-radius-md);
+  box-shadow: 0 0 0 1px var(--pcr-border) inset;
+}
+
+.team-edit-dialog .el-input__wrapper.is-focus,
+.team-edit-dialog .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px var(--pcr-color-primary) inset,
+    var(--pcr-shadow-focus);
+}
+
+.team-edit-dialog .dialog-button {
+  min-width: 80px;
+  height: 36px;
+  border-radius: var(--pcr-radius-md);
+}
+
+.team-edit-dialog .readonly-value {
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-primary);
+}
+
+.team-edit-dialog .input-help-text {
+  margin-top: 5px;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+
+.team-edit-dialog .edit-role-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.edit-role-list span {
-  padding: 3px 8px;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
-  background: var(--el-fill-color-light);
-  border-radius: 4px;
+.team-edit-dialog .edit-role-tag {
+  padding: 3px 9px;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-color-primary);
+  background: var(--pcr-color-primary-soft);
+  border-radius: var(--pcr-radius-sm);
+}
+
+@media (max-width: 600px) {
+  .team-edit-dialog .el-dialog__header {
+    padding: var(--pcr-space-3) var(--pcr-space-4);
+  }
+
+  .team-edit-dialog .el-dialog__body {
+    padding: var(--pcr-space-4);
+  }
+
+  .team-edit-dialog .el-dialog__footer {
+    padding: var(--pcr-space-3) var(--pcr-space-4);
+  }
+
+  .team-edit-dialog .el-form-item {
+    margin-bottom: var(--pcr-space-4);
+  }
 }
 </style>

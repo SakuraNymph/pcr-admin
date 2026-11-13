@@ -1,0 +1,124 @@
+<style data-app-loading="inject-css">
+  .pcr-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #f5f7fb;
+  }
+
+  .pcr-loading__brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .pcr-loading__mark {
+    width: 44px;
+    height: 44px;
+    animation: pcr-loading-pulse 1.6s ease-in-out infinite;
+  }
+
+  .pcr-loading.hidden {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .pcr-loading__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .pcr-loading__name {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #172033;
+    letter-spacing: 0.01em;
+  }
+
+  .pcr-loading__desc {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #8c96a8;
+    letter-spacing: 0.08em;
+  }
+
+  .pcr-loading__bar {
+    width: 120px;
+    height: 3px;
+    overflow: hidden;
+    background: #e5e9f2;
+    border-radius: 999px;
+  }
+
+  .pcr-loading__bar::after {
+    display: block;
+    width: 42%;
+    height: 100%;
+    content: '';
+    background: #3563f4;
+    border-radius: inherit;
+    animation: pcr-loading-slide 1.2s ease-in-out infinite;
+  }
+
+  .dark .pcr-loading {
+    background: #0d1320;
+  }
+
+  .dark .pcr-loading__name {
+    color: #eef3fb;
+  }
+
+  .dark .pcr-loading__desc {
+    color: #8895aa;
+  }
+
+  .dark .pcr-loading__bar {
+    background: #263244;
+  }
+
+  .dark .pcr-loading__bar::after {
+    background: #7b95ff;
+  }
+
+  @keyframes pcr-loading-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes pcr-loading-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(340%);
+    }
+  }
+</style>
+<div class="pcr-loading" id="__app-loading__">
+  <div class="pcr-loading__brand">
+    <img class="pcr-loading__mark" src="/brand/pcr-mark.svg" alt="" />
+    <div class="pcr-loading__text">
+      <span class="pcr-loading__name">PCR 运营台</span>
+      <span class="pcr-loading__desc">游戏数据运营平台</span>
+    </div>
+  </div>
+  <div class="pcr-loading__bar"></div>
+</div>

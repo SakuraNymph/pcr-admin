@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="pcr-mark-title">
+  <title id="pcr-mark-title">PCR</title>
+  <rect width="32" height="32" rx="8" fill="#3563F4" />
+  <path
+    d="M8 12.5 12.8 9l4.4 2 5.6-3.5"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+  />
+  <circle cx="24.6" cy="7.1" r="2.6" fill="#7658F6" stroke="#FFFFFF" stroke-width="1.4" />
+  <rect x="8" y="17" width="4" height="8" rx="2" fill="#FFFFFF" />
+  <rect x="14" y="14" width="4" height="11" rx="2" fill="#FFFFFF" />
+  <rect x="20" y="19" width="4" height="6" rx="2" fill="#FFFFFF" opacity=".92" />
+</svg>

@@ -8,7 +8,6 @@ import { useAccess } from '@vben/access';
 
 import {
   ElButton,
-  ElCard,
   ElDialog,
   ElForm,
   ElFormItem,
@@ -24,7 +23,12 @@ import {
 } from 'element-plus';
 
 import { getAllMenusApi } from '#/api/core/menu';
-import { createPermission, deletePermission, getPermissionsApi, updatePermission } from '#/api/core/permission';
+import {
+  createPermission,
+  deletePermission,
+  getPermissionsApi,
+  updatePermission,
+} from '#/api/core/permission';
 
 interface PermissionForm {
   id?: number;
@@ -363,26 +367,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-5">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-base font-medium"> 权限管理 </span>
-
+  <div class="pcr-page">
+    <section class="pcr-table-shell">
+      <div class="pcr-table-head">
+        <span class="pcr-table-head__count">
+          共 {{ permissionList.length }} 条
+        </span>
+        <div class="pcr-table-head__tools">
           <!-- 新增权限 -->
           <ElButton v-if="canCreate" type="primary" @click="handleAdd">
             新增权限
           </ElButton>
         </div>
-      </template>
+      </div>
 
-      <ElTable
-        v-loading="loading"
-        :data="permissionList"
-        border
-        stripe
-        style="width: 100%"
-      >
+      <ElTable v-loading="loading" :data="permissionList" style="width: 100%">
         <ElTableColumn label="ID" prop="id" width="80" align="center" />
 
         <ElTableColumn label="权限名称" prop="name" min-width="180" />
@@ -447,13 +446,13 @@ onMounted(() => {
           </template>
         </ElTableColumn>
       </ElTable>
-    </ElCard>
+    </section>
 
     <!-- 新增 / 编辑权限 -->
     <ElDialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="600px"
+      width="min(600px, calc(100vw - 24px))"
       destroy-on-close
     >
       <ElForm ref="formRef" :model="form" :rules="formRules" label-width="90px">
@@ -537,10 +536,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.page-container {
-  padding: 16px;
-}
-
 .no-permission {
   color: var(--el-text-color-secondary);
 }

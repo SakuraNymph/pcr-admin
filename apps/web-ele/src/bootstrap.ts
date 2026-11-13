@@ -6,6 +6,8 @@ import { preferences } from '@vben/preferences';
 import { initStores } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/ele';
+import './styles/pcr.css';
+import './styles/pcr-layout.css';
 
 import { useTitle } from '@vueuse/core';
 import { ElLoading } from 'element-plus';

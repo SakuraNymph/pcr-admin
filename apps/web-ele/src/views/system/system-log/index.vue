@@ -549,28 +549,31 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-4">
-    <ElCard shadow="never">
-      <!-- 查询区域 -->
-      <ElForm :model="searchForm" inline class="mb-4">
+  <div class="pcr-page">
+    <!-- 查询区域 -->
+    <section class="pcr-filter-panel pcr-filter-panel--compact pcr-surface">
+      <ElForm
+        :model="searchForm"
+        class="pcr-filter-row"
+        label-position="left"
+        @submit.prevent="handleSearch"
+      >
         <!-- 管理员 -->
-        <ElFormItem label="管理员">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--md" label="管理员">
           <ElInput
             v-model="searchForm.admin_username"
             placeholder="请输入管理员用户名"
             clearable
-            style="width: 160px"
             @keyup.enter="handleSearch"
           />
         </ElFormItem>
 
         <!-- 模块 -->
-        <ElFormItem label="模块">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="模块">
           <ElSelect
             v-model="searchForm.module"
             placeholder="请选择模块"
             clearable
-            style="width: 130px"
           >
             <ElOption
               v-for="item in moduleOptions"
@@ -582,12 +585,11 @@ onMounted(() => {
         </ElFormItem>
 
         <!-- 操作 -->
-        <ElFormItem label="操作">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="操作">
           <ElSelect
             v-model="searchForm.action"
             placeholder="请选择操作"
             clearable
-            style="width: 130px"
           >
             <ElOption
               v-for="item in actionOptions"
@@ -599,12 +601,11 @@ onMounted(() => {
         </ElFormItem>
 
         <!-- 对象 -->
-        <ElFormItem label="对象">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="对象">
           <ElSelect
             v-model="searchForm.target_type"
             placeholder="请选择对象"
             clearable
-            style="width: 130px"
           >
             <ElOption
               v-for="item in targetTypeOptions"
@@ -616,12 +617,11 @@ onMounted(() => {
         </ElFormItem>
 
         <!-- 结果 -->
-        <ElFormItem label="结果">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="结果">
           <ElSelect
             v-model="searchForm.result"
             placeholder="请选择结果"
             clearable
-            style="width: 110px"
           >
             <ElOption label="成功" :value="1" />
 
@@ -629,44 +629,44 @@ onMounted(() => {
           </ElSelect>
         </ElFormItem>
 
-        <!-- 开始日期 -->
-        <ElFormItem label="时间">
-          <ElDatePicker
-            v-model="searchForm.created_start"
-            type="date"
-            placeholder="开始日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
+        <!-- 时间范围 -->
+        <ElFormItem class="pcr-filter-item pcr-filter-item--range" label="时间">
+          <div class="pcr-filter-range">
+            <ElDatePicker
+              v-model="searchForm.created_start"
+              type="date"
+              placeholder="开始日期"
+              value-format="YYYY-MM-DD"
+            />
+
+            <span class="pcr-filter-range__sep">至</span>
+
+            <ElDatePicker
+              v-model="searchForm.created_end"
+              type="date"
+              placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+            />
+          </div>
         </ElFormItem>
 
-        <!-- 结束日期 -->
-        <ElFormItem label="至">
-          <ElDatePicker
-            v-model="searchForm.created_end"
-            type="date"
-            placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
-        </ElFormItem>
+        <div class="pcr-filter-actions">
+          <ElButton class="pcr-filter-reset" @click="handleReset">
+            重置
+          </ElButton>
 
-        <!-- 查询 -->
-        <ElFormItem>
           <ElButton type="primary" @click="handleSearch"> 搜索 </ElButton>
-
-          <ElButton @click="handleReset"> 重置 </ElButton>
-        </ElFormItem>
+        </div>
       </ElForm>
+    </section>
 
-      <!-- 日志列表 -->
-      <ElTable
-        v-loading="loading"
-        :data="systemLogList"
-        border
-        stripe
-        style="width: 100%"
-      >
+    <!-- 日志列表 -->
+    <section class="pcr-table-shell">
+      <div class="pcr-table-head">
+        <span class="pcr-table-head__count">共 {{ pagination.total }} 条</span>
+      </div>
+
+      <ElTable v-loading="loading" :data="systemLogList" style="width: 100%">
         <!-- ID -->
         <ElTableColumn prop="id" label="ID" width="70" align="center" />
 
@@ -763,24 +763,25 @@ onMounted(() => {
       </ElTable>
 
       <!-- 分页 -->
-      <div class="mt-4 flex justify-end">
+      <div class="pcr-table-foot">
         <ElPagination
           v-model:current-page="pagination.current_page"
           v-model:page-size="pagination.per_page"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
+          class="pcr-pagination"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
       </div>
-    </ElCard>
+    </section>
 
     <!-- 日志详情 -->
     <ElDrawer
       v-model="detailVisible"
       title="系统日志详情"
-      size="650px"
+      size="min(650px, calc(100vw - 24px))"
       destroy-on-close
       @closed="handleDetailClose"
     >
@@ -896,7 +897,8 @@ onMounted(() => {
             <div class="overflow-hidden rounded-md bg-[#1e1e1e]">
               <pre
                 class="m-0 max-h-[350px] overflow-auto whitespace-pre-wrap break-all p-4 font-mono text-[13px] leading-6 text-[#d4d4d4]"
-                >{{ formatJson(currentLog.request_data) }}</pre>
+                >{{ formatJson(currentLog.request_data) }}</pre
+              >
             </div>
           </ElCard>
 
@@ -909,7 +911,8 @@ onMounted(() => {
             <div class="overflow-hidden rounded-md bg-[#1e1e1e]">
               <pre
                 class="m-0 max-h-[350px] overflow-auto whitespace-pre-wrap break-all p-4 font-mono text-[13px] leading-6 text-[#d4d4d4]"
-                >{{ formatJson(currentLog.changes) }}</pre>
+                >{{ formatJson(currentLog.changes) }}</pre
+              >
             </div>
           </ElCard>
 

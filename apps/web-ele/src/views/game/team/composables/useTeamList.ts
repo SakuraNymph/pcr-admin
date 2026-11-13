@@ -4,12 +4,13 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import { getTeamsApi } from '#/api/core/team';
 
-import {
-  compareLineups,
-  createDefaultTeamFilters,
-} from '../team-utils';
+import { compareLineups, createDefaultTeamFilters } from '../team-utils';
 
 export function useTeamList() {
+  const error = ref('');
+
+  const errorStatus = ref<null | number>(null);
+
   const loading = ref(false);
 
   const tableData = ref<TeamListItem[]>([]);
@@ -36,6 +37,8 @@ export function useTeamList() {
 
   async function loadData() {
     loading.value = true;
+    error.value = '';
+    errorStatus.value = null;
     try {
       const response: any = await getTeamsApi(searchForm as TeamListParams);
       const page = response?.data?.data ? response.data : response;
@@ -52,10 +55,18 @@ export function useTeamList() {
         tableData.value = [];
         total.value = 0;
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       tableData.value = [];
       total.value = 0;
+      const status = Number(
+        (err as any)?.response?.status ?? (err as any)?.status ?? 0,
+      );
+      errorStatus.value = status || null;
+      error.value =
+        status === 403
+          ? '暂无权限查看作业列表'
+          : '作业列表加载失败，请稍后重试';
     } finally {
       loading.value = false;
     }
@@ -82,6 +93,8 @@ export function useTeamList() {
   return {
     damageSort,
     displayTableData,
+    error,
+    errorStatus,
     handleSearch,
     loadData,
     loading,

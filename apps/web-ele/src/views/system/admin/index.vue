@@ -14,7 +14,6 @@ import { useAccess } from '@vben/access';
 
 import {
   ElButton,
-  ElCard,
   ElDatePicker,
   ElDialog,
   ElEmpty,
@@ -31,7 +30,6 @@ import {
   ElSwitch,
   ElTable,
   ElTableColumn,
-  ElTag,
 } from 'element-plus';
 
 import {
@@ -113,6 +111,13 @@ const pagination = reactive({
  * 加载状态
  */
 const loading = ref(false);
+
+/**
+ * 加载失败状态
+ */
+const error = ref('');
+
+const errorStatus = ref<null | number>(null);
 
 /**
  * 状态修改中的管理员 ID
@@ -235,6 +240,8 @@ const formRules: FormRules = {
  */
 async function getAdminList() {
   loading.value = true;
+  error.value = '';
+  errorStatus.value = null;
 
   try {
     const params: {
@@ -281,6 +288,40 @@ async function getAdminList() {
     pagination.current_page = response.current_page;
     pagination.per_page = response.per_page;
     pagination.total = response.total;
+  } catch (err) {
+    console.error('获取管理员列表失败:', err);
+
+    adminList.value = [];
+    pagination.total = 0;
+
+    const requestError = err as {
+      code?: number | string;
+      message?: string;
+      response?: { status?: number };
+      status?: number;
+    };
+
+    const status = Number(
+      requestError?.response?.status ??
+        requestError?.status ??
+        requestError?.code ??
+        0,
+    );
+
+    const responseMessage = (
+      requestError?.response as { data?: { message?: string } }
+    )?.data?.message;
+
+    // requestClient 可能只抛出响应体或 axios 原始错误，这里统一兜底识别 403
+    const errorText = `${requestError?.message ?? ''} ${responseMessage ?? ''}`;
+
+    const isForbidden =
+      status === 403 || errorText.includes('403') || errorText.includes('权限');
+
+    errorStatus.value = isForbidden ? 403 : status || null;
+    error.value = isForbidden
+      ? '暂无权限查看管理员列表'
+      : '管理员列表加载失败，请稍后重试';
   } finally {
     loading.value = false;
   }
@@ -623,36 +664,38 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-4">
-    <ElCard shadow="never">
-      <!-- 查询区域 -->
-      <ElForm :model="searchForm" inline class="mb-4">
-        <ElFormItem label="用户名">
+  <div class="pcr-page admin-page">
+    <!-- 筛选区域 -->
+    <section class="pcr-filter-panel pcr-filter-panel--compact pcr-surface">
+      <ElForm
+        :model="searchForm"
+        class="pcr-filter-row"
+        label-position="left"
+        @submit.prevent="handleSearch"
+      >
+        <ElFormItem class="pcr-filter-item pcr-filter-item--md" label="用户名">
           <ElInput
             v-model="searchForm.username"
             placeholder="请输入用户名"
             clearable
-            style="width: 150px"
             @keyup.enter="handleSearch"
           />
         </ElFormItem>
 
-        <ElFormItem label="昵称">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--sm" label="昵称">
           <ElInput
             v-model="searchForm.nickname"
             placeholder="请输入昵称"
             clearable
-            style="width: 150px"
             @keyup.enter="handleSearch"
           />
         </ElFormItem>
 
-        <ElFormItem label="状态">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="状态">
           <ElSelect
             v-model="searchForm.status"
             placeholder="请选择状态"
             clearable
-            style="width: 120px"
           >
             <ElOption label="全部" value="" />
 
@@ -662,12 +705,11 @@ onMounted(async () => {
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem label="角色">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--sm" label="角色">
           <ElSelect
             v-model="searchForm.role_id"
             placeholder="请选择角色"
             clearable
-            style="width: 150px"
           >
             <ElOption
               v-for="role in roles"
@@ -678,161 +720,224 @@ onMounted(async () => {
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem label="创建时间">
-          <ElDatePicker
-            v-model="searchForm.created_start"
-            type="date"
-            placeholder="开始日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--range"
+          label="创建时间"
+        >
+          <div class="pcr-filter-range">
+            <ElDatePicker
+              v-model="searchForm.created_start"
+              type="date"
+              placeholder="开始日期"
+              value-format="YYYY-MM-DD"
+            />
+
+            <span class="pcr-filter-range__sep">至</span>
+
+            <ElDatePicker
+              v-model="searchForm.created_end"
+              type="date"
+              placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+            />
+          </div>
         </ElFormItem>
 
-        <ElFormItem label="至">
-          <ElDatePicker
-            v-model="searchForm.created_end"
-            type="date"
-            placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
-        </ElFormItem>
+        <div class="pcr-filter-actions">
+          <ElButton class="pcr-filter-reset" @click="handleReset">
+            重置
+          </ElButton>
 
-        <ElFormItem>
           <ElButton type="primary" @click="handleSearch"> 搜索 </ElButton>
+        </div>
+      </ElForm>
+    </section>
 
-          <ElButton @click="handleReset"> 重置 </ElButton>
-
-          <!-- 新增管理员：需要 system:admin:create 权限 -->
+    <!-- 管理员表格 -->
+    <section class="pcr-table-shell">
+      <div class="pcr-table-head">
+        <span class="pcr-table-head__count">
+          共 {{ pagination.total }} 个管理员
+        </span>
+        <div class="pcr-table-head__tools">
           <ElButton v-if="canCreateAdmin()" type="primary" @click="handleAdd">
             新增管理员
           </ElButton>
-        </ElFormItem>
-      </ElForm>
-
-      <!-- 管理员表格 -->
-      <ElTable
-        v-loading="loading"
-        :data="adminList"
-        border
-        stripe
-        style="width: 100%"
-      >
-        <ElTableColumn prop="id" label="ID" width="70" align="center" />
-
-        <ElTableColumn prop="username" label="用户名" min-width="130" />
-
-        <ElTableColumn prop="nickname" label="昵称" min-width="120" />
-
-        <ElTableColumn label="角色" min-width="220">
-          <template #default="scope">
-            <template v-if="scope.row.roles?.length">
-              <ElTag
-                v-for="role in scope.row.roles"
-                :key="role.id"
-                class="mr-1"
-              >
-                {{ role.name }}
-              </ElTag>
-            </template>
-
-            <span v-else> - </span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="email" label="邮箱" min-width="180" />
-
-        <ElTableColumn prop="mobile" label="手机号" min-width="130" />
-
-        <!-- 状态 -->
-        <ElTableColumn label="状态" width="90" align="center">
-          <template #default="scope">
-            <ElSwitch
-              v-if="canUpdateAdminStatus()"
-              :model-value="scope.row.status === 1"
-              :active-value="true"
-              :inactive-value="false"
-              :loading="statusUpdatingIds.includes(scope.row.id)"
-              @change="handleStatusChange(scope.row, $event)"
-            />
-
-            <ElTag v-else :type="scope.row.status === 1 ? 'success' : 'info'">
-              {{ getStatusText(scope.row.status) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="最后登录时间" min-width="180">
-          <template #default="scope">
-            {{ formatDateTime(scope.row.last_login_at) }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn
-          prop="last_login_ip"
-          label="最后登录IP"
-          min-width="140"
-        />
-
-        <!-- 创建时间 -->
-        <ElTableColumn
-          label="创建时间"
-          min-width="180"
-          sortable
-          :sort-method="sortByCreatedAt"
-        >
-          <template #default="scope">
-            {{ formatDateTime(scope.row.created_at) }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="操作" width="150" fixed="right" align="center">
-          <template #default="scope">
-            <ElButton
-              v-if="canUpdateAdmin()"
-              type="primary"
-              link
-              @click="handleEdit(scope.row)"
-            >
-              编辑
-            </ElButton>
-
-            <ElButton
-              v-if="canDeleteAdmin()"
-              type="danger"
-              link
-              @click="handleDelete(scope.row)"
-            >
-              删除
-            </ElButton>
-
-            <span
-              v-if="!canUpdateAdmin() && !canDeleteAdmin()"
-              class="text-gray-400"
-            >
-              无操作权限
-            </span>
-          </template>
-        </ElTableColumn>
-
-        <template #empty>
-          <ElEmpty description="暂无管理员数据" />
-        </template>
-      </ElTable>
-
-      <!-- 分页 -->
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-model:current-page="pagination.current_page"
-          v-model:page-size="pagination.per_page"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        </div>
       </div>
-    </ElCard>
+
+      <div v-if="error" class="table-state">
+        <p class="table-state__title">{{ error }}</p>
+        <ElButton
+          v-if="errorStatus !== 403"
+          type="primary"
+          plain
+          @click="getAdminList()"
+        >
+          重新加载
+        </ElButton>
+      </div>
+
+      <template v-else>
+        <ElTable
+          v-loading="loading"
+          :data="adminList"
+          element-loading-text="加载管理员数据…"
+          element-loading-background="var(--pcr-bg-surface)"
+          style="width: 100%"
+        >
+          <ElTableColumn
+            prop="id"
+            label="ID"
+            width="46"
+            align="center"
+            label-class-name="col-id"
+          />
+
+          <ElTableColumn
+            prop="username"
+            label="用户名"
+            min-width="96"
+            show-overflow-tooltip
+          />
+
+          <ElTableColumn prop="nickname" label="昵称" min-width="108" />
+
+          <ElTableColumn label="角色" min-width="176">
+            <template #default="scope">
+              <div v-if="scope.row.roles?.length" class="role-tags">
+                <span
+                  v-for="role in scope.row.roles"
+                  :key="role.id"
+                  class="pcr-soft-tag pcr-soft-tag--primary"
+                >
+                  {{ role.name }}
+                </span>
+              </div>
+
+              <span v-else class="cell-muted"> - </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn
+            prop="email"
+            label="邮箱"
+            min-width="128"
+            show-overflow-tooltip
+          />
+
+          <ElTableColumn
+            prop="mobile"
+            label="手机号"
+            min-width="112"
+            show-overflow-tooltip
+          />
+
+          <!-- 状态 -->
+          <ElTableColumn label="状态" width="64" align="center">
+            <template #default="scope">
+              <ElSwitch
+                v-if="canUpdateAdminStatus()"
+                :model-value="scope.row.status === 1"
+                :active-value="true"
+                :inactive-value="false"
+                :loading="statusUpdatingIds.includes(scope.row.id)"
+                @change="handleStatusChange(scope.row, $event)"
+              />
+
+              <span
+                v-else
+                class="pcr-soft-tag"
+                :class="
+                  scope.row.status === 1
+                    ? 'pcr-soft-tag--success'
+                    : 'pcr-soft-tag--muted'
+                "
+              >
+                {{ getStatusText(scope.row.status) }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn label="最后登录时间" min-width="120">
+            <template #default="scope">
+              {{ formatDateTime(scope.row.last_login_at) }}
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn
+            prop="last_login_ip"
+            label="最后登录IP"
+            min-width="104"
+            show-overflow-tooltip
+          />
+
+          <!-- 创建时间 -->
+          <ElTableColumn
+            label="创建时间"
+            min-width="120"
+            sortable
+            :sort-method="sortByCreatedAt"
+          >
+            <template #default="scope">
+              {{ formatDateTime(scope.row.created_at) }}
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn label="操作" width="96" fixed="right" align="center">
+            <template #default="scope">
+              <div class="table-actions">
+                <ElButton
+                  v-if="canUpdateAdmin()"
+                  type="primary"
+                  link
+                  @click="handleEdit(scope.row)"
+                >
+                  编辑
+                </ElButton>
+
+                <ElButton
+                  v-if="canDeleteAdmin()"
+                  type="danger"
+                  link
+                  @click="handleDelete(scope.row)"
+                >
+                  删除
+                </ElButton>
+
+                <span
+                  v-if="!canUpdateAdmin() && !canDeleteAdmin()"
+                  class="no-permission"
+                >
+                  无操作权限
+                </span>
+              </div>
+            </template>
+          </ElTableColumn>
+
+          <template #empty>
+            <div class="table-empty">
+              <ElEmpty :image-size="72" description="暂无管理员数据" />
+              <p>调整筛选条件或新增管理员后再试</p>
+            </div>
+          </template>
+        </ElTable>
+
+        <!-- 分页 -->
+        <div class="pcr-table-foot">
+          <ElPagination
+            v-model:current-page="pagination.current_page"
+            v-model:page-size="pagination.per_page"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            class="pcr-pagination"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </template>
+    </section>
 
     <!-- 新增 / 编辑弹窗 -->
     <ElDialog
@@ -840,9 +945,16 @@ onMounted(async () => {
       :title="isEdit ? '编辑管理员' : '新增管理员'"
       width="600px"
       destroy-on-close
+      modal-class="pcr-admin-dialog"
       @closed="handleDialogClose"
     >
-      <ElForm ref="formRef" :model="form" :rules="formRules" label-width="90px">
+      <ElForm
+        ref="formRef"
+        :model="form"
+        :rules="formRules"
+        class="admin-form"
+        label-width="90px"
+      >
         <ElFormItem label="用户名" prop="username">
           <ElInput
             v-model="form.username"
@@ -913,10 +1025,151 @@ onMounted(async () => {
       </ElForm>
 
       <template #footer>
-        <ElButton @click="dialogVisible = false"> 取消 </ElButton>
+        <div class="dialog-footer">
+          <ElButton @click="dialogVisible = false"> 取消 </ElButton>
 
-        <ElButton type="primary" @click="handleSubmit"> 确定 </ElButton>
+          <ElButton type="primary" @click="handleSubmit"> 确定 </ElButton>
+        </div>
       </template>
     </ElDialog>
   </div>
 </template>
+
+<style scoped>
+.admin-page {
+  min-width: 0;
+}
+
+.admin-page :deep(.el-table .cell) {
+  padding: 0 6px;
+}
+
+.admin-page :deep(th.col-id .cell) {
+  padding: 0;
+  white-space: nowrap;
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.table-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+.role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-tags :deep(.pcr-soft-tag) {
+  height: 22px;
+  padding: 0 6px;
+}
+
+.cell-muted {
+  color: var(--pcr-text-muted);
+}
+
+.no-permission {
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+
+.table-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-3);
+  align-items: center;
+  padding: var(--pcr-space-7) 0;
+}
+
+.table-state__title {
+  margin: 0;
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-secondary);
+}
+
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-2);
+  align-items: center;
+  padding: var(--pcr-space-6) 0;
+}
+
+.table-empty p {
+  margin: 0;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+
+.admin-form :deep(.el-input__wrapper),
+.admin-form :deep(.el-select__wrapper) {
+  min-height: 36px;
+  border-radius: var(--pcr-radius-md);
+}
+
+.dialog-footer {
+  display: flex;
+  gap: var(--pcr-space-2);
+  justify-content: flex-end;
+}
+
+.dialog-footer :deep(.el-button) {
+  height: 36px;
+  padding: 0 18px;
+  margin-left: 0;
+  border-radius: var(--pcr-radius-md);
+}
+
+@media (max-width: 600px) {
+  .admin-page {
+    padding: var(--pcr-space-4);
+  }
+}
+</style>
+
+<style>
+.pcr-admin-dialog .el-dialog {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 48px);
+  margin: 24px auto !important;
+  overflow: hidden;
+  background: var(--pcr-bg-surface);
+  border: var(--pcr-border-width) solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+  box-shadow: var(--pcr-shadow-overlay);
+}
+
+.pcr-admin-dialog .el-dialog__header {
+  padding-bottom: var(--pcr-space-3);
+  margin-right: 0;
+  border-bottom: var(--pcr-border-width) solid var(--pcr-border);
+}
+
+.pcr-admin-dialog .el-dialog__title {
+  font-size: var(--pcr-font-size-section-title);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
+}
+
+.pcr-admin-dialog .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: var(--pcr-space-4);
+  overflow-y: auto;
+}
+
+.pcr-admin-dialog .el-dialog__footer {
+  padding-top: var(--pcr-space-3);
+  border-top: var(--pcr-border-width) solid var(--pcr-border);
+}
+</style>

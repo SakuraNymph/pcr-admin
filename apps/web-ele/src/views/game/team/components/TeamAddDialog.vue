@@ -313,17 +313,13 @@ watch(
                 <div class="preview-title">角色预览</div>
                 <div class="preview-roles">
                   <div v-for="index in 5" :key="index" class="preview-role">
-                    <template
-                      v-if="getCurrentRoleOptionForSlot(index - 1)"
-                    >
+                    <template v-if="getCurrentRoleOptionForSlot(index - 1)">
                       <img
                         :src="
                           getCurrentRoleOptionForSlot(index - 1)?.image_url ??
                           ''
                         "
-                        :alt="
-                          getCurrentRoleOptionForSlot(index - 1)?.nickname
-                        "
+                        :alt="getCurrentRoleOptionForSlot(index - 1)?.nickname"
                         class="preview-role-avatar"
                       />
                       <span>
@@ -365,74 +361,47 @@ watch(
 </template>
 
 <style scoped>
-.team-add-dialog :deep(.el-dialog) {
-  height: 100%;
-  margin: 0 auto;
-  overflow: hidden;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 6px;
-}
-
-.team-add-dialog :deep(.el-dialog__header) {
-  padding: 0;
-  margin-right: 0;
-}
-
-.team-add-dialog :deep(.el-dialog__body) {
-  height: calc(100% - 54px);
-  padding: 0;
-  overflow: hidden;
-  background: var(--el-bg-color-page);
-}
-
-.team-add-dialog :deep(.el-dialog__headerbtn) {
-  top: 18px;
-  right: 18px;
-}
-
 .dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 54px;
-  padding: 0 20px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: 0 52px 0 var(--pcr-space-5);
+  background: var(--pcr-bg-surface);
+  border-bottom: 1px solid var(--pcr-border);
 }
 
 .dialog-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+  font-size: var(--pcr-font-size-body);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
 }
 
 .dialog-count {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
 }
 
 .dialog-page {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--el-bg-color-page);
+  min-height: 100%;
+  background: var(--pcr-bg-page);
 }
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: var(--pcr-space-4);
   align-items: start;
-  padding: 16px;
+  padding: var(--pcr-space-4);
 }
 
 .card {
+  min-width: 0;
   overflow: hidden;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 3%);
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
 }
 
 .card-header {
@@ -440,23 +409,23 @@ watch(
   align-items: center;
   justify-content: space-between;
   height: 54px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: 0 var(--pcr-space-5);
+  border-bottom: 1px solid var(--pcr-border);
 }
 
 .card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+  font-size: var(--pcr-font-size-body);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-text-primary);
 }
 
 .card-count {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
 }
 
 .card-body {
-  padding: 18px;
+  padding: var(--pcr-space-5);
 }
 
 .add-panel {
@@ -472,55 +441,57 @@ watch(
 }
 
 .form-label {
-  font-size: 13px;
+  font-size: var(--pcr-font-size-small);
   line-height: 18px;
-  color: var(--el-text-color-secondary);
+  color: var(--pcr-text-secondary);
 }
 
 .add-panel :deep(.input .el-input__wrapper) {
-  height: 32px;
+  min-height: 36px;
   padding: 0 11px;
-  background: var(--el-bg-color);
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+  background: var(--pcr-bg-surface);
+  border-radius: var(--pcr-radius-md);
+  box-shadow: 0 0 0 1px var(--pcr-border) inset;
 }
 
 .add-panel :deep(.input .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-border-color-hover) inset;
+  box-shadow: 0 0 0 1px var(--pcr-border-strong) inset;
 }
 
 .add-panel :deep(.input .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+  box-shadow:
+    0 0 0 1px var(--pcr-color-primary) inset,
+    var(--pcr-shadow-focus);
 }
 
 .add-panel :deep(.input .el-input__inner) {
-  font-size: 13px;
-  color: #fff !important;
-  caret-color: #fff;
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-primary);
+  caret-color: var(--pcr-color-primary);
 }
 
 .add-panel :deep(.input .el-input__inner::placeholder) {
-  color: var(--el-text-color-placeholder) !important;
+  color: var(--pcr-text-muted);
   opacity: 1;
 }
 
 .author-input-error :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--el-color-danger) inset !important;
+  box-shadow: 0 0 0 1px var(--pcr-danger) inset !important;
 }
 
 .link-input-error :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--el-color-danger) inset !important;
+  box-shadow: 0 0 0 1px var(--pcr-danger) inset !important;
 }
 
 .damage-input-error :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--el-color-danger) inset !important;
+  box-shadow: 0 0 0 1px var(--pcr-danger) inset !important;
 }
 
 .input-error-text {
   margin-top: -2px;
-  font-size: 12px;
+  font-size: var(--pcr-font-size-caption);
   line-height: 16px;
-  color: var(--el-color-danger);
+  color: var(--pcr-danger);
 }
 
 .options {
@@ -541,13 +512,13 @@ watch(
 }
 
 .option-btn {
-  height: 32px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+  height: 34px;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-secondary);
   cursor: pointer;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-md);
   transition:
     color 0.2s,
     border-color 0.2s,
@@ -555,15 +526,16 @@ watch(
 }
 
 .option-btn:hover {
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-  border-color: var(--el-color-primary-light-5);
+  color: var(--pcr-color-primary);
+  background: var(--pcr-color-primary-soft);
+  border-color: var(--pcr-color-primary);
 }
 
 .option-btn.active {
-  color: #fff;
-  background: var(--el-color-primary);
-  border-color: var(--el-color-primary);
+  font-weight: var(--pcr-font-weight-semibold);
+  color: var(--pcr-color-primary);
+  background: var(--pcr-color-primary-soft);
+  border-color: var(--pcr-color-primary);
 }
 
 .damage-row {
@@ -588,8 +560,8 @@ watch(
 
 .preview-title {
   margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-secondary);
 }
 
 .preview-roles {
@@ -612,12 +584,12 @@ watch(
   justify-content: center;
   width: 42px;
   height: 42px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
   object-fit: cover;
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
+  background: var(--pcr-bg-subtle);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-sm);
 }
 
 .preview-role-avatar.empty {
@@ -637,10 +609,11 @@ watch(
 
 .primary-btn,
 .plain-btn {
-  height: 34px;
-  font-size: 13px;
+  height: 40px;
+  font-size: var(--pcr-font-size-small);
+  font-weight: var(--pcr-font-weight-medium);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--pcr-radius-md);
   transition:
     opacity 0.2s,
     background 0.2s,
@@ -648,13 +621,14 @@ watch(
 }
 
 .primary-btn {
-  color: #fff;
-  background: var(--el-color-primary);
-  border: 1px solid var(--el-color-primary);
+  color: var(--pcr-color-primary-foreground);
+  background: var(--pcr-color-primary);
+  border: 1px solid var(--pcr-color-primary);
 }
 
 .primary-btn:hover {
-  opacity: 0.9;
+  background: var(--pcr-color-primary-hover);
+  border-color: var(--pcr-color-primary-hover);
 }
 
 .primary-btn:disabled,
@@ -664,15 +638,15 @@ watch(
 }
 
 .plain-btn {
-  color: var(--el-text-color-secondary);
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
+  color: var(--pcr-text-secondary);
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
 }
 
 .plain-btn:hover {
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-  border-color: var(--el-color-primary-light-5);
+  color: var(--pcr-color-primary);
+  background: var(--pcr-color-primary-soft);
+  border-color: var(--pcr-color-primary);
 }
 
 .lineup-suggestions {
@@ -696,7 +670,7 @@ watch(
 }
 
 .lineup-suggestion:hover {
-  background: var(--el-fill-color-light);
+  background: var(--pcr-bg-subtle);
 }
 
 .lineup-avatars {
@@ -713,13 +687,14 @@ watch(
   height: 42px;
   flex: 0 1 42px;
   object-fit: cover;
-  border: 1px solid var(--el-bg-color);
-  border-radius: 4px;
+  border: 1px solid var(--pcr-bg-surface);
+  border-radius: var(--pcr-radius-sm);
 }
 
 .suggestion-empty {
   padding: 10px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
 }
 
 @media (max-width: 900px) {
@@ -775,6 +750,10 @@ watch(
   .card-header {
     height: 46px;
     padding: 0 12px;
+  }
+
+  .dialog-header {
+    padding: 0 48px 0 12px;
   }
 
   .card-title {
@@ -855,9 +834,9 @@ watch(
   gap: 8px;
   padding: 8px;
   margin-top: 8px;
-  background: var(--el-fill-color-lighter);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 5px;
+  background: var(--pcr-bg-subtle);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-md);
 }
 
 .role-suggestion {
@@ -866,28 +845,28 @@ watch(
   gap: 4px;
   align-items: center;
   padding: 5px;
-  color: var(--el-text-color-primary);
+  color: var(--pcr-text-primary);
   cursor: pointer;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 5px;
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-md);
 }
 
 .role-suggestion:hover {
-  background: var(--el-fill-color-light);
-  border-color: var(--el-color-primary);
+  background: var(--pcr-color-primary-soft);
+  border-color: var(--pcr-color-primary);
 }
 
 .role-suggestion img {
   width: 42px;
   height: 42px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--pcr-radius-sm);
 }
 
 .role-suggestion span {
   max-width: 64px;
-  font-size: 12px;
+  font-size: var(--pcr-font-size-caption);
   line-height: 16px;
   text-align: center;
   overflow-wrap: anywhere;
@@ -895,7 +874,54 @@ watch(
 
 .input-help-text {
   margin-top: 5px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+</style>
+
+<style>
+.team-add-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 8vh);
+  margin: 4vh auto;
+  overflow: hidden;
+  background: var(--pcr-bg-surface);
+  border: 1px solid var(--pcr-border);
+  border-radius: var(--pcr-radius-lg);
+  box-shadow: var(--pcr-shadow-overlay);
+}
+
+.team-add-dialog .el-dialog__header {
+  padding: 0;
+  margin-right: 0;
+}
+
+.team-add-dialog .el-dialog__body {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow-y: auto;
+  background: var(--pcr-bg-page);
+}
+
+.team-add-dialog .el-dialog__headerbtn {
+  top: 18px;
+  right: 18px;
+}
+
+.team-add-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: var(--pcr-text-muted);
+}
+
+.team-add-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  color: var(--pcr-text-primary);
+}
+
+@media (max-width: 600px) {
+  .team-add-dialog {
+    max-height: calc(100vh - 4vh);
+    margin: 2vh auto;
+  }
 }
 </style>

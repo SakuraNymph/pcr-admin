@@ -1,79 +1,23 @@
 <script lang="ts" setup>
-import type { NotificationItem } from '@vben/layouts';
-
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
-import { VBEN_DOC_URL, VBEN_GITHUB_URL } from '@vben/constants';
 import { useWatermark } from '@vben/hooks';
-import { BookOpenText, CircleHelp, SvgGithubIcon } from '@vben/icons';
-import {
-  BasicLayout,
-  LockScreen,
-  Notification,
-  UserDropdown,
-} from '@vben/layouts';
+import { BasicLayout, LockScreen, UserDropdown } from '@vben/layouts';
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
-import { openWindow } from '@vben/utils';
 
-import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
-import LoginForm from '#/views/_core/authentication/login.vue';
+import PcrLoginForm from '#/views/_core/authentication/components/PcrLoginForm.vue';
 
-const notifications = ref<NotificationItem[]>([
-  {
-    id: 1,
-    avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
-    date: '3小时前',
-    isRead: true,
-    message: '描述信息描述信息描述信息',
-    title: '收到了 14 份新周报',
-  },
-  {
-    id: 2,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '刚刚',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '朱偏右 回复了你',
-  },
-  {
-    id: 3,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '2024-01-01',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '曲丽丽 评论了你',
-  },
-  {
-    id: 4,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '代办提醒',
-  },
-  {
-    id: 5,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转Workspace示例',
-    link: '/workspace',
-  },
-  {
-    id: 6,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转外部链接示例',
-    link: 'https://doc.vben.pro',
-  },
-]);
+interface AdminDisplayUser {
+  avatar?: string;
+  homePath?: string;
+  nickname?: string;
+  realName?: string;
+  username?: string;
+}
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -81,108 +25,52 @@ const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
 const { isDark } = usePreferences();
-const showDot = computed(() =>
-  notifications.value.some((item) => !item.isRead),
+
+const currentUser = computed(
+  () => userStore.userInfo as AdminDisplayUser | null,
 );
-
-const menus = computed(() => [
-  {
-    handler: () => {
-      router.push({ name: 'Profile' });
-    },
-    icon: 'lucide:user',
-    text: $t('page.auth.profile'),
-  },
-  {
-    handler: () => {
-      openWindow(VBEN_DOC_URL, {
-        target: '_blank',
-      });
-    },
-    icon: BookOpenText,
-    text: $t('ui.widgets.document'),
-  },
-  {
-    handler: () => {
-      openWindow(VBEN_GITHUB_URL, {
-        target: '_blank',
-      });
-    },
-    icon: SvgGithubIcon,
-    text: 'GitHub',
-  },
-  {
-    handler: () => {
-      openWindow(`${VBEN_GITHUB_URL}/issues`, {
-        target: '_blank',
-      });
-    },
-    icon: CircleHelp,
-    text: $t('ui.widgets.qa'),
-  },
-]);
-
+const displayName = computed(() => {
+  const user = currentUser.value;
+  return user?.nickname || user?.realName || user?.username || '管理员';
+});
+const accountName = computed(() => currentUser.value?.username || '');
 const avatar = computed(() => {
-  return userStore.userInfo?.avatar ?? preferences.app.defaultAvatar;
+  if (currentUser.value?.avatar) {
+    return currentUser.value.avatar;
+  }
+
+  const firstCharacter = displayName.value.trim().charAt(0);
+  const initial = /^[A-Za-z0-9\u4E00-\u9FA5]$/.test(firstCharacter)
+    ? firstCharacter.toUpperCase()
+    : 'P';
+  const fallback = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="#EEF3FF"/><text x="32" y="32" dy=".35em" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="26" font-weight="600" fill="#3563F4">${initial}</text></svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(fallback)}`;
 });
 
 async function handleLogout() {
   await authStore.logout(false);
 }
 
-function handleNoticeClear() {
-  notifications.value = [];
-}
-
-function markRead(id: number | string) {
-  const item = notifications.value.find((item) => item.id === id);
-  if (item) {
-    item.isRead = true;
-  }
-}
-
-function remove(id: number | string) {
-  notifications.value = notifications.value.filter((item) => item.id !== id);
-}
-
-function handleMakeAll() {
-  notifications.value.forEach((item) => (item.isRead = true));
-}
-
-const viewAll = () => {};
-
-const handleClick = (item: NotificationItem) => {
-  // 如果通知项有链接，点击时跳转
-  if (item.link) {
-    navigateTo(item.link, item.query, item.state);
-  }
-};
-
-function navigateTo(
-  link: string,
-  query?: Record<string, any>,
-  state?: Record<string, any>,
-) {
-  if (link.startsWith('http://') || link.startsWith('https://')) {
-    // 外部链接，在新标签页打开
-    window.open(link, '_blank');
-  } else {
-    // 内部路由链接，支持 query 参数和 state
-    router.push({
-      path: link,
-      query: query || {},
-      state,
-    });
-  }
+function handleClickLogo() {
+  router.push(currentUser.value?.homePath || '/');
 }
 
 watch(
   () => ({
-    enable: preferences.app.watermark,
+    accountName: accountName.value,
     content: preferences.app.watermarkContent,
+    displayName: displayName.value,
+    enable: preferences.app.watermark,
     isDark: isDark.value,
   }),
-  async ({ enable, content, isDark: isDarkValue }) => {
+  async ({
+    accountName: accountNameValue,
+    content,
+    displayName: displayNameValue,
+    enable,
+    isDark: isDarkValue,
+  }) => {
     if (enable) {
       const watermarkColor = isDarkValue
         ? 'rgba(255, 255, 255, 0.12)'
@@ -204,7 +92,8 @@ watch(
         },
         content:
           content ||
-          `${userStore.userInfo?.username} - ${userStore.userInfo?.realName}`,
+          [displayNameValue, accountNameValue].filter(Boolean).join(' · ') ||
+          'PCR 运营台',
       });
     } else {
       destroyWatermark();
@@ -217,39 +106,41 @@ watch(
 </script>
 
 <template>
-  <BasicLayout @clear-preferences-and-logout="handleLogout">
-    <template #user-dropdown>
-      <UserDropdown
-        :avatar
-        :menus
-        :text="userStore.userInfo?.realName"
-        description="ann.vben@gmail.com"
-        tag-text="Pro"
-        @logout="handleLogout"
-      />
+  <BasicLayout
+    class="pcr-admin-layout"
+    @clear-preferences-and-logout="handleLogout"
+    @click-logo="handleClickLogo"
+  >
+    <template #logo-text>
+      <span class="pcr-brand-wordmark">
+        <span class="pcr-brand-wordmark__name">PCR</span>
+        <span class="pcr-brand-wordmark__sub">运营台</span>
+      </span>
     </template>
-    <template #notification>
-      <Notification
-        :dot="showDot"
-        :notifications="notifications"
-        @clear="handleNoticeClear"
-        @read="(item) => item.id && markRead(item.id)"
-        @remove="(item) => item.id && remove(item.id)"
-        @make-all="handleMakeAll"
-        @on-click="handleClick"
-        @view-all="viewAll"
-      />
+    <template #user-dropdown>
+      <div class="pcr-user-entry">
+        <span class="pcr-user-entry__name">{{ displayName }}</span>
+        <UserDropdown
+          :avatar="avatar"
+          :description="accountName"
+          :text="displayName"
+          @logout="handleLogout"
+        />
+      </div>
     </template>
     <template #extra>
       <AuthenticationLoginExpiredModal
         v-model:open="accessStore.loginExpired"
-        :avatar
+        :avatar="avatar"
       >
-        <LoginForm />
+        <PcrLoginForm
+          :key="accessStore.loginExpired ? 'expired' : 'idle'"
+          embedded
+        />
       </AuthenticationLoginExpiredModal>
     </template>
     <template #lock-screen>
-      <LockScreen :avatar @to-login="handleLogout" />
+      <LockScreen :avatar="avatar" @to-login="handleLogout" />
     </template>
   </BasicLayout>
 </template>

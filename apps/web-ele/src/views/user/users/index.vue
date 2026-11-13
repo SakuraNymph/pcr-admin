@@ -5,7 +5,6 @@ import { onMounted, reactive, ref } from 'vue';
 
 import {
   ElButton,
-  ElCard,
   ElDatePicker,
   ElEmpty,
   ElForm,
@@ -16,7 +15,6 @@ import {
   ElSelect,
   ElTable,
   ElTableColumn,
-  ElTag,
 } from 'element-plus';
 
 import { getUsersApi } from '#/api/core/user-management';
@@ -32,10 +30,6 @@ const userList = ref<UserItem[]>([]);
 const searchForm = reactive({
   nickname: '',
   email: '',
-  ip: '',
-  country: '',
-  province: '',
-  city: '',
   is_subscribe: '',
   start_date: '',
   end_date: '',
@@ -56,10 +50,19 @@ const pagination = reactive({
 const loading = ref(false);
 
 /**
+ * 加载失败状态
+ */
+const error = ref('');
+
+const errorStatus = ref<null | number>(null);
+
+/**
  * 获取用户列表
  */
 async function getUserList() {
   loading.value = true;
+  error.value = '';
+  errorStatus.value = null;
 
   try {
     const params: UserListParams = {
@@ -73,22 +76,6 @@ async function getUserList() {
 
     if (searchForm.email) {
       params.email = searchForm.email.trim();
-    }
-
-    if (searchForm.ip) {
-      params.ip = searchForm.ip.trim();
-    }
-
-    if (searchForm.country) {
-      params.country = searchForm.country.trim();
-    }
-
-    if (searchForm.province) {
-      params.province = searchForm.province.trim();
-    }
-
-    if (searchForm.city) {
-      params.city = searchForm.city.trim();
     }
 
     if (searchForm.is_subscribe !== '') {
@@ -107,6 +94,36 @@ async function getUserList() {
 
     userList.value = response.items;
     pagination.total = response.total;
+  } catch (err) {
+    console.error('获取用户列表失败:', err);
+
+    userList.value = [];
+    pagination.total = 0;
+
+    const requestError = err as {
+      code?: number | string;
+      message?: string;
+      response?: { status?: number };
+      status?: number;
+    };
+
+    const status = Number(
+      requestError?.response?.status ??
+        requestError?.status ??
+        requestError?.code ??
+        0,
+    );
+
+    // requestClient 只抛出响应体，403 时通过后端权限提示文案兜底识别
+    const isForbidden =
+      status === 403 ||
+      (typeof requestError?.message === 'string' &&
+        requestError.message.includes('权限'));
+
+    errorStatus.value = isForbidden ? 403 : status || null;
+    error.value = isForbidden
+      ? '暂无权限查看用户列表'
+      : '用户列表加载失败，请稍后重试';
   } finally {
     loading.value = false;
   }
@@ -126,10 +143,6 @@ function handleSearch() {
 function handleReset() {
   searchForm.nickname = '';
   searchForm.email = '';
-  searchForm.ip = '';
-  searchForm.country = '';
-  searchForm.province = '';
-  searchForm.city = '';
   searchForm.is_subscribe = '';
   searchForm.start_date = '';
   searchForm.end_date = '';
@@ -209,76 +222,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-4">
-    <ElCard shadow="never">
-      <!-- 查询区域 -->
-      <ElForm :model="searchForm" inline class="mb-4">
-        <ElFormItem label="昵称">
+  <div class="pcr-page users-page">
+    <section class="pcr-filter-panel pcr-filter-panel--compact pcr-surface">
+      <ElForm
+        :model="searchForm"
+        class="pcr-filter-row"
+        label-position="left"
+        @submit.prevent="handleSearch"
+      >
+        <ElFormItem class="pcr-filter-item pcr-filter-item--md" label="昵称">
           <ElInput
             v-model="searchForm.nickname"
             placeholder="请输入昵称"
             clearable
-            style="width: 150px"
             @keyup.enter="handleSearch"
           />
         </ElFormItem>
 
-        <ElFormItem label="邮箱">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--lg" label="邮箱">
           <ElInput
             v-model="searchForm.email"
             placeholder="请输入邮箱"
             clearable
-            style="width: 180px"
             @keyup.enter="handleSearch"
           />
         </ElFormItem>
 
-        <ElFormItem label="IP">
-          <ElInput
-            v-model="searchForm.ip"
-            placeholder="请输入IP地址"
-            clearable
-            style="width: 150px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="国家">
-          <ElInput
-            v-model="searchForm.country"
-            placeholder="请输入国家"
-            clearable
-            style="width: 130px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="省份">
-          <ElInput
-            v-model="searchForm.province"
-            placeholder="请输入省份"
-            clearable
-            style="width: 130px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="城市">
-          <ElInput
-            v-model="searchForm.city"
-            placeholder="请输入城市"
-            clearable
-            style="width: 130px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="订阅">
+        <ElFormItem class="pcr-filter-item pcr-filter-item--xs" label="订阅">
           <ElSelect
             v-model="searchForm.is_subscribe"
             placeholder="请选择"
             clearable
-            style="width: 120px"
           >
             <ElOption label="全部" value="" />
 
@@ -288,122 +262,236 @@ onMounted(() => {
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem label="注册时间">
-          <ElDatePicker
-            v-model="searchForm.start_date"
-            type="date"
-            placeholder="开始日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="至">
-          <ElDatePicker
-            v-model="searchForm.end_date"
-            type="date"
-            placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 140px"
-          />
-        </ElFormItem>
-
-        <ElFormItem>
-          <ElButton type="primary" @click="handleSearch"> 搜索 </ElButton>
-
-          <ElButton @click="handleReset"> 重置 </ElButton>
-        </ElFormItem>
-      </ElForm>
-
-      <!-- 用户表格 -->
-      <ElTable
-        v-loading="loading"
-        :data="userList"
-        border
-        stripe
-        style="width: 100%"
-      >
-        <ElTableColumn prop="id" label="UID" width="80" align="center" />
-
-        <ElTableColumn prop="nickname" label="昵称" min-width="130">
-          <template #default="scope">
-            {{ scope.row.nickname || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="email" label="邮箱" min-width="200">
-          <template #default="scope">
-            {{ scope.row.email || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="ip" label="IP地址" min-width="150" />
-
-        <ElTableColumn prop="country" label="国家" min-width="100">
-          <template #default="scope">
-            {{ scope.row.country || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="province" label="省份" min-width="100">
-          <template #default="scope">
-            {{ scope.row.province || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="city" label="城市" min-width="100">
-          <template #default="scope">
-            {{ scope.row.city || '-' }}
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="订阅" width="90" align="center">
-          <template #default="scope">
-            <ElTag :type="scope.row.is_subscribe ? 'success' : 'info'">
-              {{ scope.row.is_subscribe ? '已订阅' : '未订阅' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn
+        <ElFormItem
+          class="pcr-filter-item pcr-filter-item--range"
           label="注册时间"
-          min-width="180"
-          sortable
-          :sort-method="sortByCreatedAt"
         >
-          <template #default="scope">
-            {{ formatDateTime(scope.row.created_at) }}
-          </template>
-        </ElTableColumn>
+          <div class="pcr-filter-range">
+            <ElDatePicker
+              v-model="searchForm.start_date"
+              type="date"
+              placeholder="开始日期"
+              value-format="YYYY-MM-DD"
+            />
 
-        <ElTableColumn
-          label="修改时间"
-          min-width="180"
-          sortable
-          :sort-method="sortByUpdatedAt"
-        >
-          <template #default="scope">
-            {{ formatDateTime(scope.row.updated_at) }}
-          </template>
-        </ElTableColumn>
+            <span class="pcr-filter-range__sep">至</span>
 
-        <template #empty>
-          <ElEmpty description="暂无用户数据" />
-        </template>
-      </ElTable>
+            <ElDatePicker
+              v-model="searchForm.end_date"
+              type="date"
+              placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+            />
+          </div>
+        </ElFormItem>
 
-      <!-- 分页 -->
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-model:current-page="pagination.current_page"
-          v-model:page-size="pagination.per_page"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <div class="pcr-filter-actions">
+          <ElButton class="pcr-filter-reset" @click="handleReset">
+            重置
+          </ElButton>
+
+          <ElButton type="primary" @click="handleSearch"> 搜索 </ElButton>
+        </div>
+      </ElForm>
+    </section>
+
+    <section class="pcr-table-shell">
+      <div class="pcr-table-head">
+        <span class="pcr-table-head__count">
+          共 {{ pagination.total }} 条
+        </span>
       </div>
-    </ElCard>
+
+      <div v-if="error" class="table-state">
+        <p class="table-state__title">{{ error }}</p>
+        <ElButton
+          v-if="errorStatus !== 403"
+          type="primary"
+          plain
+          @click="getUserList()"
+        >
+          重新加载
+        </ElButton>
+      </div>
+
+      <template v-else>
+        <ElTable
+          v-loading="loading"
+          :data="userList"
+          element-loading-background="var(--pcr-bg-surface)"
+          element-loading-text="加载用户数据…"
+          row-key="id"
+          style="width: 100%"
+        >
+          <ElTableColumn prop="id" label="UID" width="72" align="center" />
+
+          <ElTableColumn prop="nickname" label="昵称" min-width="116">
+            <template #default="scope">
+              <span class="user-name" :title="scope.row.nickname || ''">
+                {{ scope.row.nickname || '-' }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn prop="email" label="邮箱" min-width="180">
+            <template #default="scope">
+              <span class="user-email" :title="scope.row.email || ''">
+                {{ scope.row.email || '-' }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn prop="ip" label="IP地址" min-width="126">
+            <template #default="scope">
+              <span class="user-mono">{{ scope.row.ip || '-' }}</span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn prop="country" label="国家" min-width="86">
+            <template #default="scope">
+              {{ scope.row.country || '-' }}
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn prop="province" label="省份" min-width="86">
+            <template #default="scope">
+              {{ scope.row.province || '-' }}
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn prop="city" label="城市" min-width="86">
+            <template #default="scope">
+              {{ scope.row.city || '-' }}
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn label="订阅" width="96" align="center">
+            <template #default="scope">
+              <span
+                class="pcr-soft-tag"
+                :class="
+                  scope.row.is_subscribe
+                    ? 'pcr-soft-tag--success'
+                    : 'pcr-soft-tag--muted'
+                "
+              >
+                {{ scope.row.is_subscribe ? '已订阅' : '未订阅' }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn
+            label="注册时间"
+            min-width="150"
+            sortable
+            :sort-method="sortByCreatedAt"
+          >
+            <template #default="scope">
+              <span class="user-time">
+                {{ formatDateTime(scope.row.created_at) }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <ElTableColumn
+            label="修改时间"
+            min-width="150"
+            sortable
+            :sort-method="sortByUpdatedAt"
+          >
+            <template #default="scope">
+              <span class="user-time">
+                {{ formatDateTime(scope.row.updated_at) }}
+              </span>
+            </template>
+          </ElTableColumn>
+
+          <template #empty>
+            <div class="table-empty">
+              <ElEmpty :image-size="72" description="暂无用户数据" />
+              <p>调整筛选条件后再试</p>
+            </div>
+          </template>
+        </ElTable>
+
+        <div class="pcr-table-foot">
+          <ElPagination
+            v-model:current-page="pagination.current_page"
+            v-model:page-size="pagination.per_page"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            class="pcr-pagination"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </template>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.users-page {
+  min-width: 0;
+}
+
+.user-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--pcr-font-weight-medium);
+  color: var(--pcr-text-primary);
+}
+
+.user-email {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pcr-text-secondary);
+}
+
+.user-mono {
+  font-variant-numeric: tabular-nums;
+  color: var(--pcr-text-secondary);
+}
+
+.user-time {
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+  white-space: nowrap;
+}
+
+.table-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-3);
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: var(--pcr-space-7) var(--pcr-space-4);
+  text-align: center;
+}
+
+.table-state__title {
+  margin: 0;
+  font-size: var(--pcr-font-size-small);
+  color: var(--pcr-text-secondary);
+}
+
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcr-space-2);
+  align-items: center;
+  padding: var(--pcr-space-6) 0;
+}
+
+.table-empty p {
+  margin: 0;
+  font-size: var(--pcr-font-size-caption);
+  color: var(--pcr-text-muted);
+}
+</style>
