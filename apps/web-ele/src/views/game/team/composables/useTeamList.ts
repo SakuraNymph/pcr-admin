@@ -17,9 +17,15 @@ export function useTeamList() {
 
   const total = ref(0);
 
+  const page = ref(1);
+
+  const pageSize = ref(20);
+
   const searchForm = reactive<TeamListParams>(createDefaultTeamFilters());
 
   const damageSort = ref<-1 | 1>(-1);
+
+  let requestId = 0;
 
   const displayTableData = computed(() => {
     return [...tableData.value].toSorted(
@@ -36,26 +42,21 @@ export function useTeamList() {
   });
 
   async function loadData() {
+    const currentRequestId = ++requestId;
     loading.value = true;
     error.value = '';
     errorStatus.value = null;
     try {
-      const response: any = await getTeamsApi(searchForm as TeamListParams);
-      const page = response?.data?.data ? response.data : response;
-      if (Array.isArray(page?.data)) {
-        tableData.value = page.data;
-        total.value = page.data.length;
-      } else if (Array.isArray(response?.data)) {
-        tableData.value = response.data;
-        total.value = response.data.length;
-      } else if (Array.isArray(response)) {
-        tableData.value = response;
-        total.value = response.length;
-      } else {
-        tableData.value = [];
-        total.value = 0;
-      }
+      const response = await getTeamsApi({
+        ...searchForm,
+        page: page.value,
+        pageSize: pageSize.value,
+      });
+      if (currentRequestId !== requestId) return;
+      tableData.value = response.data;
+      total.value = Number(response.total ?? 0);
     } catch (err) {
+      if (currentRequestId !== requestId) return;
       console.error(err);
       tableData.value = [];
       total.value = 0;
@@ -68,17 +69,32 @@ export function useTeamList() {
           ? '暂无权限查看作业列表'
           : '作业列表加载失败，请稍后重试';
     } finally {
-      loading.value = false;
+      if (currentRequestId === requestId) {
+        loading.value = false;
+      }
     }
   }
 
   function handleSearch() {
+    page.value = 1;
     loadData();
   }
 
   function resetSearch() {
     Object.assign(searchForm, createDefaultTeamFilters());
     damageSort.value = -1;
+    page.value = 1;
+    loadData();
+  }
+
+  function handlePageChange(value: number) {
+    page.value = value;
+    loadData();
+  }
+
+  function handlePageSizeChange(value: number) {
+    pageSize.value = value;
+    page.value = 1;
     loadData();
   }
 
@@ -95,9 +111,13 @@ export function useTeamList() {
     displayTableData,
     error,
     errorStatus,
+    handlePageChange,
+    handlePageSizeChange,
     handleSearch,
     loadData,
     loading,
+    page,
+    pageSize,
     resetSearch,
     searchForm,
     tableData,

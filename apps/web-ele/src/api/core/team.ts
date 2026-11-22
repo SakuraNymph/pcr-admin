@@ -174,7 +174,12 @@ export interface TeamListParams {
    * 状态
    */
   status?: number;
+}
 
+/** 作业列表查询参数，筛选条件之外包含分页参数。 */
+export interface TeamListQueryParams extends TeamListParams {
+  page?: number;
+  pageSize?: number;
 }
 
 export interface TeamLineupOption {
@@ -231,7 +236,13 @@ export interface UpdateTeamLinkPayload {
   damage?: null | number;
 }
 
-export type TeamPageResult = TeamListItem[];
+export interface TeamPageResult {
+  current_page: number;
+  data: TeamListItem[];
+  last_page: number;
+  per_page: number;
+  total: number;
+}
 
 /**
  * 获取全部角色选项
@@ -252,7 +263,7 @@ export async function getDStageLineupOptionsApi(prefix: string) {
 /**
  * 获取作业列表
  */
-export async function getTeamsApi(params?: TeamListParams) {
+export async function getTeamsApi(params?: TeamListQueryParams) {
   return requestClient.get<TeamPageResult>('/game/teams', {
     params,
   });

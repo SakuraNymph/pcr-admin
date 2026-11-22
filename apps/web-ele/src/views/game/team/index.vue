@@ -22,11 +22,16 @@ const {
   displayTableData,
   error,
   errorStatus,
+  handlePageChange,
+  handlePageSizeChange,
   handleSearch,
   loadData,
   loading,
+  page,
+  pageSize,
   resetSearch,
   searchForm,
+  tableData,
   toggleDamageSort,
   total,
 } = useTeamList();
@@ -59,6 +64,17 @@ function openEditDialog(row: TeamListItem) {
   editingTeam.value = row;
 }
 
+async function reloadAfterLinkChange() {
+  if (
+    (searchForm.status === 0 || searchForm.status === 1) &&
+    tableData.value.length === 1 &&
+    page.value > 1
+  ) {
+    page.value -= 1;
+  }
+  await loadData();
+}
+
 async function handleDelete(row: TeamListItem) {
   try {
     await ElMessageBox.confirm(
@@ -72,7 +88,7 @@ async function handleDelete(row: TeamListItem) {
     );
     await deleteTeamLinkApi(row.team_id, row.link_id);
     ElMessage.success('来源作业已隐藏');
-    await loadData();
+    await reloadAfterLinkChange();
   } catch (error) {
     if (error !== 'cancel' && error !== 'close') {
       console.error(error);
@@ -84,7 +100,7 @@ async function handleRestore(row: TeamListItem) {
   try {
     await updateTeamLinkStatusApi(row.team_id, row.link_id, 1);
     ElMessage.success('来源作业已恢复');
-    await loadData();
+    await reloadAfterLinkChange();
   } catch (error) {
     console.error(error);
   }
@@ -114,6 +130,8 @@ async function handleRestore(row: TeamListItem) {
         :loading="loading"
         :error="error"
         :error-status="errorStatus"
+        :page="page"
+        :page-size="pageSize"
         :damage-sort="damageSort"
         :can-create="canCreate"
         :can-update-link="canUpdateLink"
@@ -122,8 +140,10 @@ async function handleRestore(row: TeamListItem) {
         @add="openAddDialog"
         @edit="openEditDialog"
         @hide="handleDelete"
+        @page-change="handlePageChange"
         @restore="handleRestore"
         @retry="loadData"
+        @size-change="handlePageSizeChange"
         @toggle-damage-sort="toggleDamageSort"
       />
     </template>

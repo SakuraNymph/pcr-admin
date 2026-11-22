@@ -1,7 +1,13 @@
 <script lang="ts" setup>
 import type { TeamListItem } from '#/api/core/team';
 
-import { ElButton, ElEmpty, ElTable, ElTableColumn } from 'element-plus';
+import {
+  ElButton,
+  ElEmpty,
+  ElPagination,
+  ElTable,
+  ElTableColumn,
+} from 'element-plus';
 
 import {
   formatDamage,
@@ -27,6 +33,8 @@ defineProps<{
   error: string;
   errorStatus: null | number;
   loading: boolean;
+  page: number;
+  pageSize: number;
   rows: TeamListItem[];
   total: number;
 }>();
@@ -35,8 +43,10 @@ const emit = defineEmits<{
   add: [];
   edit: [row: TeamListItem];
   hide: [row: TeamListItem];
+  pageChange: [page: number];
   retry: [];
   restore: [row: TeamListItem];
+  sizeChange: [pageSize: number];
   toggleDamageSort: [];
 }>();
 </script>
@@ -229,6 +239,19 @@ const emit = defineEmits<{
         </div>
       </template>
     </ElTable>
+
+    <div v-if="!error && total > 0" class="pcr-table-foot">
+      <ElPagination
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        :page-sizes="[20, 50, 100]"
+        class="pcr-pagination"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="emit('pageChange', $event)"
+        @size-change="emit('sizeChange', $event)"
+      />
+    </div>
   </section>
 </template>
 
