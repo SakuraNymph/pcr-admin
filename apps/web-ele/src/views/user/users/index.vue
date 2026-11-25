@@ -194,13 +194,22 @@ function formatDateTime(value: null | string) {
 }
 
 /**
- * 创建时间排序
+ * 注册时间排序（无注册时间的记录始终排在最后）
  */
-function sortByCreatedAt(a: UserItem, b: UserItem) {
-  const timeA = new Date(a.created_at).getTime();
-  const timeB = new Date(b.created_at).getTime();
+function sortByRegisteredAt(a: UserItem, b: UserItem) {
+  if (!a.registered_at && !b.registered_at) {
+    return 0;
+  }
 
-  return timeA - timeB;
+  if (!a.registered_at) {
+    return 1;
+  }
+
+  if (!b.registered_at) {
+    return -1;
+  }
+
+  return new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime();
 }
 
 /**
@@ -384,11 +393,11 @@ onMounted(() => {
             label="注册时间"
             min-width="150"
             sortable
-            :sort-method="sortByCreatedAt"
+            :sort-method="sortByRegisteredAt"
           >
             <template #default="scope">
               <span class="user-time">
-                {{ formatDateTime(scope.row.created_at) }}
+                {{ formatDateTime(scope.row.registered_at) }}
               </span>
             </template>
           </ElTableColumn>

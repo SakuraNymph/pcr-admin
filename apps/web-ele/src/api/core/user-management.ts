@@ -11,6 +11,8 @@ export interface UserItem {
   city: null | string;
   nickname: null | string;
   status: number;
+  /** 注册时间；游客为 null */
+  registered_at: null | string;
   is_subscribe: boolean;
   email: null | string;
   created_at: string;
